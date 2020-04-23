@@ -3820,7 +3820,7 @@ label|Download Latest Version
 							ENET_PACKET_FLAG_RELIABLE);
 						enet_peer_send(peer, 0, packet);
 						((PlayerInfo*)(peer->data))->isUpdating = true;
-						//enet_peer_disconnect_later(peer, 0); what is the point of adding this
+						//enet_peer_disconnect_later(peer, 0); // TODO: add this back, and fix it properly
 						//enet_host_flush(server);
 					}
 					// TODO FIX refresh_item_data ^^^^^^^^^^^^^^
