@@ -448,127 +448,6 @@ public:
 	}
 };
 
-
-GamePacket appendFloat(GamePacket p, float val)
-{
-	//p.data[56] += 1;
-	BYTE* n = new BYTE[p.len + 2 + 4];
-	memcpy(n, p.data, p.len);
-	delete p.data;
-	p.data = n;
-	n[p.len] = p.indexes;
-	n[p.len + 1] = 1;
-	memcpy(n + p.len + 2, &val, 4);
-	p.len = p.len + 2 + 4;
-	p.indexes++;
-	return p;
-}
-
-GamePacket appendFloat(GamePacket p, float val, float val2)
-{
-	//p.data[56] += 1;
-	BYTE* n = new BYTE[p.len + 2 + 8];
-	memcpy(n, p.data, p.len);
-	delete p.data;
-	p.data = n;
-	n[p.len] = p.indexes;
-	n[p.len + 1] = 3;
-	memcpy(n + p.len + 2, &val, 4);
-	memcpy(n + p.len + 6, &val2, 4);
-	p.len = p.len + 2 + 8;
-	p.indexes++;
-	return p;
-}
-
-GamePacket appendFloat(GamePacket p, float val, float val2, float val3)
-{
-	//p.data[56] += 1;
-	BYTE* n = new BYTE[p.len + 2 + 12];
-	memcpy(n, p.data, p.len);
-	delete p.data;
-	p.data = n;
-	n[p.len] = p.indexes;
-	n[p.len + 1] = 4;
-	memcpy(n + p.len + 2, &val, 4);
-	memcpy(n + p.len + 6, &val2, 4);
-	memcpy(n + p.len + 10, &val3, 4);
-	p.len = p.len + 2 + 12;
-	p.indexes++;
-	return p;
-}
-
-GamePacket appendInt(GamePacket p, int val)
-{
-	//p.data[56] += 1;
-	BYTE* n = new BYTE[p.len + 2 + 4];
-	memcpy(n, p.data, p.len);
-	delete p.data;
-	p.data = n;
-	n[p.len] = p.indexes;
-	n[p.len + 1] = 9;
-	memcpy(n + p.len + 2, &val, 4);
-	p.len = p.len + 2 + 4;
-	p.indexes++;
-	return p;
-}
-
-GamePacket appendIntx(GamePacket p, int val)
-{
-	//p.data[56] += 1;
-	BYTE* n = new BYTE[p.len + 2 + 4];
-	memcpy(n, p.data, p.len);
-	delete p.data;
-	p.data = n;
-	n[p.len] = p.indexes;
-	n[p.len + 1] = 5;
-	memcpy(n + p.len + 2, &val, 4);
-	p.len = p.len + 2 + 4;
-	p.indexes++;
-	return p;
-}
-
-GamePacket appendString(GamePacket p, string str)
-{
-	//p.data[56] += 1;
-	BYTE* n = new BYTE[p.len + 2 + str.length() + 4];
-	memcpy(n, p.data, p.len);
-	delete p.data;
-	p.data = n;
-	n[p.len] = p.indexes;
-	n[p.len + 1] = 2;
-	int sLen = str.length();
-	memcpy(n+p.len+2, &sLen, 4);
-	memcpy(n + p.len + 6, str.c_str(), sLen);
-	p.len = p.len + 2 + str.length() + 4;
-	p.indexes++;
-	return p;
-}
-
-GamePacket createPacket()
-{
-    BYTE* packetData = new BYTE[61];
-    string asdf = "0400000001000000FFFFFFFF00000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-    for (int i = 0; i < asdf.length(); i += 2)
-    {
-        char x = ch2n(asdf[i]);
-        x = x << 4;
-        x += ch2n(asdf[i + 1]);
-        memcpy(packetData + (i / 2), &x, 1);
-        if (asdf.length() > 61 * 2) throw 0;
-    }
-    GamePacket p;
-    p.data = packetData;
-    p.len = 61;
-    p.indexes = 0;
-}
-
-GamePacket packetEnd(GamePacket p)
-{
-	
-	//*(p.data + 57) = p.indexes;
-	return p;
-}
-
 struct InventoryItem {
 	__int16 itemID;
 	__int8 itemCount;
@@ -850,7 +729,11 @@ int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 				if ((playerInfo(currentPeer))->rawName == PlayerDB::getProperName(username))
 				{
 					{
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Someone else logged into this account!"));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnConsoleMessage")
+							.appendString("Someone else logged into this account!")
+							.build();
+
 						ENetPacket* packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -858,7 +741,10 @@ int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 						delete p.data;
 					}
 					{
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Someone else was logged into this account! He was kicked out now."));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnConsoleMessage")
+							.appendString("Someone else was logged into this account! He was kicked out now.")
+							.build();
 						ENetPacket* packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -934,7 +820,11 @@ WorldDB::WorldDB() {
 
 namespace packet {
 	void consolemessage(ENetPeer* peer, string message) {
-		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), message));
+
+		GamePacket p = GamePacketBuilder()
+			.appendString("OnConsoleMessage")
+			.appendString(message)
+			.build();
 		ENetPacket* packet = enet_packet_create(p.data,
 			p.len,
 			ENET_PACKET_FLAG_RELIABLE);
@@ -942,7 +832,10 @@ namespace packet {
 		delete p.data;
 	}
 	void dialog(ENetPeer* peer, string message) {
-		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnDialogRequest"), message));
+		GamePacket p = GamePacketBuilder()
+			.appendString("OnDialogRequest")
+			.appendString(message)
+			.build();
 		ENetPacket* packet = enet_packet_create(p.data,
 			p.len,
 			ENET_PACKET_FLAG_RELIABLE);
@@ -950,7 +843,10 @@ namespace packet {
 		delete p.data;
 	}
 	void onspawn(ENetPeer* peer, string message) {
-		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnSpawn"), message));
+		GamePacket p = GamePacketBuilder()
+			.appendString("OnSpawn")
+			.appendString(message)
+			.build();
 		ENetPacket* packet = enet_packet_create(p.data,
 			p.len,
 			ENET_PACKET_FLAG_RELIABLE);
@@ -958,7 +854,10 @@ namespace packet {
 		delete p.data;
 	}
 	void requestworldselectmenu(ENetPeer* peer, string message) {
-		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnRequestWorldSelectMenu"), message));
+		GamePacket p = GamePacketBuilder()
+			.appendString("OnRequestWorldSelectMenu")
+			.appendString(message)
+			.build();
 		ENetPacket* packet = enet_packet_create(p.data,
 			p.len,
 			ENET_PACKET_FLAG_RELIABLE);
@@ -966,7 +865,10 @@ namespace packet {
 		delete p.data;
 	}
 	void storerequest(ENetPeer* peer, string message) {
-		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnStoreRequest"), message));
+		GamePacket p = GamePacketBuilder()
+			.appendString("OnStoreRequest")
+			.appendString(message)
+			.build();
 		ENetPacket* packet = enet_packet_create(p.data,
 			p.len,
 			ENET_PACKET_FLAG_RELIABLE);
@@ -1908,7 +1810,15 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				continue;
 			if (isHere(peer, currentPeer))
 			{
-				GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), (playerInfo(peer))->cloth_hair, (playerInfo(peer))->cloth_shirt, (playerInfo(peer))->cloth_pants), (playerInfo(peer))->cloth_feet, (playerInfo(peer))->cloth_face, (playerInfo(peer))->cloth_hand), (playerInfo(peer))->cloth_back, (playerInfo(peer))->cloth_mask, (playerInfo(peer))->cloth_necklace), (playerInfo(peer))->skinColor), 0.0f, 0.0f, 0.0f));
+				GamePacket p3 = GamePacketBuilder()
+					.appendString("OnSetClothing")
+					.appendFloat(playerInfo(peer)->cloth_hair, playerInfo(peer)->cloth_shirt, playerInfo(peer)->cloth_pants)
+					.appendFloat(playerInfo(peer)->cloth_feet, playerInfo(peer)->cloth_face, playerInfo(peer)->cloth_hand)
+					.appendFloat(playerInfo(peer)->cloth_back, playerInfo(peer)->cloth_mask, (playerInfo(peer))->cloth_necklace)
+					.appendIntx(playerInfo(peer)->skinColor)
+					.appendFloat(0.0f, 0.0f, 0.0f)
+					.build();
+
 				memcpy(p3.data + 8, &((playerInfo(peer))->netID), 4); // ffloor
 				ENetPacket * packet3 = enet_packet_create(p3.data,
 					p3.len,
@@ -1917,7 +1827,15 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				enet_peer_send(currentPeer, 0, packet3);
 				delete p3.data;
 				//enet_host_flush(server);
-				GamePacket p4 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), (playerInfo(currentPeer))->cloth_hair, (playerInfo(currentPeer))->cloth_shirt, (playerInfo(currentPeer))->cloth_pants), (playerInfo(currentPeer))->cloth_feet, (playerInfo(currentPeer))->cloth_face, (playerInfo(currentPeer))->cloth_hand), (playerInfo(currentPeer))->cloth_back, (playerInfo(currentPeer))->cloth_mask, (playerInfo(currentPeer))->cloth_necklace), (playerInfo(currentPeer))->skinColor), 0.0f, 0.0f, 0.0f));
+				GamePacket p4 = GamePacketBuilder()
+					.appendString("OnSetClothing")
+					.appendFloat(playerInfo(peer)->cloth_hair, playerInfo(peer)->cloth_shirt, playerInfo(peer)->cloth_pants)
+					.appendFloat(playerInfo(peer)->cloth_feet, playerInfo(peer)->cloth_face, playerInfo(peer)->cloth_hand)
+					.appendFloat(playerInfo(peer)->cloth_back, playerInfo(peer)->cloth_mask, (playerInfo(peer))->cloth_necklace)
+					.appendIntx(playerInfo(peer)->skinColor)
+					.appendFloat(0.0f, 0.0f, 0.0f)
+					.build();
+
 				memcpy(p4.data + 8, &((playerInfo(currentPeer))->netID), 4); // ffloor
 				ENetPacket * packet4 = enet_packet_create(p4.data,
 					p4.len,
@@ -1932,7 +1850,14 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 	void sendClothes(ENetPeer* peer)
 	{
 		ENetPeer * currentPeer;
-		GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), (playerInfo(peer))->cloth_hair, (playerInfo(peer))->cloth_shirt, (playerInfo(peer))->cloth_pants), (playerInfo(peer))->cloth_feet, (playerInfo(peer))->cloth_face, (playerInfo(peer))->cloth_hand), (playerInfo(peer))->cloth_back, (playerInfo(peer))->cloth_mask, (playerInfo(peer))->cloth_necklace), (playerInfo(peer))->skinColor), 0.0f, 0.0f, 0.0f));
+		GamePacket p3 = GamePacketBuilder()
+			.appendString("OnSetClothing")
+			.appendFloat(playerInfo(peer)->cloth_hair, playerInfo(peer)->cloth_shirt, playerInfo(peer)->cloth_pants)
+			.appendFloat(playerInfo(peer)->cloth_feet, playerInfo(peer)->cloth_face, playerInfo(peer)->cloth_hand)
+			.appendFloat(playerInfo(peer)->cloth_back, playerInfo(peer)->cloth_mask, (playerInfo(peer))->cloth_necklace)
+			.appendIntx(playerInfo(peer)->skinColor)
+			.appendFloat(0.0f, 0.0f, 0.0f)
+			.build();
 		for (currentPeer = server->peers;
 			currentPeer < &server->peers[server->peerCount];
 			++currentPeer)
@@ -2005,7 +1930,13 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				continue;
 			if (isHere(peer, currentPeer))
 			{
-				GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), (playerInfo(peer))->netID), "`w[" + (playerInfo(peer))->displayName + " `wspun the wheel and got `6"+std::to_string(val)+"`w!]"), 0));
+				GamePacket p2 = GamePacketBuilder()
+					.appendString("OnTalkBubble")
+					.appendIntx(playerInfo(peer)->netID)
+					.appendString("`w[" + (playerInfo(peer))->displayName + " `wspun the wheel and got `6" + std::to_string(val) + "`w!]")
+					.appendIntx(0)
+					.build();
+
 				ENetPacket * packet2 = enet_packet_create(p2.data,
 					p2.len,
 					ENET_PACKET_FLAG_RELIABLE);
@@ -2259,8 +2190,16 @@ void loadnews() {
 	void sendPlayerLeave(ENetPeer* peer, PlayerInfo* player)
 	{
 		ENetPeer * currentPeer;
-		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnRemove"), "netID|" + std::to_string(player->netID) + "\n")); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
-		GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`5<`w" + player->displayName + "`` left, `w" + std::to_string(getPlayersCountInWorld(player->currentWorld) - 1) + "`` others here>``"));
+		GamePacket p = GamePacketBuilder()
+			.appendString("OnRemove")
+			.appendString("netID | " + std::to_string(player->netID) + "\n")
+			.build();
+		GamePacket p2 =
+			GamePacketBuilder()
+			.appendString("OnConsoleMessage")
+			.appendString("`5<`w" + player->displayName + "`` left, `w" + std::to_string(getPlayersCountInWorld(player->currentWorld) - 1) + "`` others here>``")
+			.build();
+
 		for (currentPeer = server->peers;
 			currentPeer < &server->peers[server->peerCount];
 			++currentPeer)
@@ -2393,8 +2332,16 @@ void loadnews() {
 				name = (playerInfo(currentPeer))->displayName;
 
 		}
-		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "CP:0_PL:4_OID:_CT:[W]_ `o<`w" + name + "`o> " + message));
-		GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), netID), message), 0));
+		GamePacket p = GamePacketBuilder()
+			.appendString("OnConsoleMessage")
+			.appendString("CP:0_PL:4_OID:_CT:[W]_ `o<`w" + name + "`o> " + message)
+			.build();
+		GamePacket p2 = GamePacketBuilder()
+			.appendString("OnTalkBubble")
+			.appendIntx(netID)
+			.appendString(message)
+			.appendIntx(0)
+			.build();
 		for (currentPeer = server->peers;
 			currentPeer < &server->peers[server->peerCount];
 			++currentPeer)
@@ -2438,7 +2385,12 @@ void loadnews() {
 			{
 				if((playerInfo(currentPeer))->isGhost)
 					continue;
-				GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), (playerInfo(currentPeer))->netID), (playerInfo(currentPeer))->displayName), 1));
+				GamePacket p2 = GamePacketBuilder()
+					.appendString("OnTalkBubble")
+					.appendIntx(playerInfo(currentPeer)->netID)
+					.appendString(playerInfo(currentPeer)->displayName)
+					.appendIntx(1)
+					.build();
 				ENetPacket * packet2 = enet_packet_create(p2.data,
 					p2.len,
 					ENET_PACKET_FLAG_RELIABLE);
@@ -2546,7 +2498,10 @@ void loadnews() {
 	{
 		ENetPeer * currentPeer;
 		string name = "";
-		GamePacket p2 = packetEnd(appendString(appendString(createPacket(), "OnAction"), action));
+		GamePacket p2 = GamePacketBuilder()
+			.appendString("OnAction")
+			.appendString(action)
+			.build();
 		for (currentPeer = server->peers;
 			currentPeer < &server->peers[server->peerCount];
 			++currentPeer)
@@ -2915,7 +2870,10 @@ label|Download Latest Version
 								y = (i / world->width) * 32;
 							}
 						}
-						GamePacket p2 = packetEnd(appendFloat(appendString(createPacket(), "OnSetPos"), x,y));
+						GamePacket p2 = GamePacketBuilder()
+							.appendString("OnSetPos")
+							.appendFloat(x, y)
+							.build();
 						memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 						ENetPacket * packet2 = enet_packet_create(p2.data,
 							p2.len,
@@ -2936,7 +2894,10 @@ label|Download Latest Version
 								y = (i / world->width) * 32;
 							}
 						}
-						GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnSetFreezeState"), 0));
+						GamePacket p2 = GamePacketBuilder()
+							.appendString("OnSetFreezeState")
+							.appendIntx(0)
+							.build();
 						memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 						ENetPacket * packet2 = enet_packet_create(p2.data,
 							p2.len,
@@ -2954,7 +2915,10 @@ label|Download Latest Version
 				{
 #ifndef REGISTRATION
 					{
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Registration is not supported yet!"));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnConsoleMessage")
+							.appendString("Registration is not supported yet!")
+							.build();
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -3025,7 +2989,12 @@ label|Download Latest Version
 						int regState = PlayerDB::playerRegister(username, password, passwordverify, email, discord);
 						if (regState == 1) {
 							packet::consolemessage(peer, "`rYour account has been created!``");
-							GamePacket p2 = packetEnd(appendString(appendString(appendInt(appendString(createPacket(), "SetHasGrowID"), 1), username), password));
+							GamePacket p2 = GamePacketBuilder()
+								.appendString("SetHasGrowID")
+								.appendInt(1)
+								.appendString(username)
+								.appendString(password)
+								.build();
 							ENetPacket * packet2 = enet_packet_create(p2.data,
 								p2.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -3147,7 +3116,10 @@ label|Download Latest Version
 						}
 						x = x.substr(0, x.length() - 2);
 
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "``Moderators online: "+x));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnConsoleMessage")
+							.appendString("``Moderators online: " + x)
+							.build();
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -3177,7 +3149,10 @@ label|Download Latest Version
 										packet::consolemessage(peer, "`2You are no longer duct-taped!");
 										sendState(currentPeer);
 										{
-											GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`2You have un duct-taped the player!"));
+											GamePacket p = GamePacketBuilder()
+												.appendString("OnConsoleMessage")
+												.appendString("`2You have un duct-taped the player!")
+												.build();
 											ENetPacket * packet = enet_packet_create(p.data,
 												p.len,
 												ENET_PACKET_FLAG_RELIABLE);
@@ -3188,14 +3163,20 @@ label|Download Latest Version
 										(playerInfo(currentPeer))->taped = true;
 										(playerInfo(currentPeer))->isDuctaped = true;
 							
-										GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`4You have been duct-taped!"));
+										GamePacket p = GamePacketBuilder()
+											.appendString("OnConsoleMessage")
+											.appendString("`4You have been duct-taped!")
+											.build();
 										ENetPacket * packet = enet_packet_create(p.data,
 											p.len,
 											ENET_PACKET_FLAG_RELIABLE);
 										enet_peer_send(currentPeer, 0, packet);
 										sendState(currentPeer);
 										{
-											GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`2You have duct-taped the player!"));
+											GamePacket p = GamePacketBuilder()
+												.appendString("OnConsoleMessage")
+												.appendString("`2You have duct-taped the player!")
+												.build();
 											ENetPacket * packet = enet_packet_create(p.data,
 												p.len,
 												ENET_PACKET_FLAG_RELIABLE);
@@ -3205,7 +3186,10 @@ label|Download Latest Version
 								}
 							}
 							if (!found) {
-								GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`4Player not found!"));
+								GamePacket p = GamePacketBuilder()
+									.appendString("OnConsoleMessage")
+									.appendString("`4Player not found!")
+									.build();
 								ENetPacket * packet = enet_packet_create(p.data,
 									p.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -3213,7 +3197,10 @@ label|Download Latest Version
 							}
 						}
 						else {
-							GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`4You need to have a higher admin-level to do that!"));
+							GamePacket p = GamePacketBuilder()
+								.appendString("OnConsoleMessage")
+								.appendString("`4You need to have a higher admin-level to do that!")
+								.build();
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -3233,7 +3220,10 @@ label|Download Latest Version
 					else if (str.substr(0, 6) == "/nick ") {
 						string nam1e = "```0" + str.substr(6, cch.length() - 6 - 1);
 						(playerInfo(event.peer))->displayName = str.substr(6, cch.length() - 6 - 1);
-						GamePacket p3 = packetEnd(appendString(appendString(createPacket(), "OnNameChanged"), nam1e));
+						GamePacket p3 = GamePacketBuilder()
+							.appendString("OnNameChanged")
+							.appendString(nam1e)
+							.build();
 						memcpy(p3.data + 8, &((playerInfo(peer))->netID), 4);
 						ENetPacket * packet3 = enet_packet_create(p3.data,
 							p3.len,
@@ -3254,7 +3244,10 @@ label|Download Latest Version
 					}
 						else if (str.substr(0, 5) == "/gem ") //gem if u want flex with ur gems!
 						{
-						GamePacket p = packetEnd(appendInt(appendString(createPacket(), "OnSetBux"), atoi(str.substr(5).c_str())));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnSetBux")
+							.appendInt(atoi(str.substr(5).c_str()))
+							.build();
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -3268,7 +3261,14 @@ label|Download Latest Version
 					else if (str.substr(0, 6) == "/flag ") {
 						int lol = atoi(str.substr(6).c_str());
 			
-						GamePacket p2 = packetEnd(appendIntx(appendIntx(appendIntx(appendIntx(appendString(createPacket(), "OnGuildDataChanged"), 1), 2), lol), 3));
+						GamePacket p2 = GamePacketBuilder()
+							.appendString("OnGuildDataChanged")
+							.appendIntx(1)
+							.appendIntx(2)
+							.appendIntx(lol)
+							.appendIntx(3)
+							.build();
+						
 						memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 						ENetPacket * packet3 = enet_packet_create(p2.data,
 							p2.len,
@@ -3305,7 +3305,10 @@ label|Download Latest Version
 											{
 												packet::consolemessage(peer, "`oPlayer `2" + (playerInfo(peer))->displayName + "`o has just changed the world's weather!");
 
-												GamePacket p2 = packetEnd(appendInt(appendString(createPacket(), "OnSetCurrentWeather"), atoi(str.substr(9).c_str())));
+												GamePacket p2 = GamePacketBuilder()
+													.appendString("OnSetCurrentWeather")
+													.appendInt(atoi(str.substr(9).c_str()))
+													.build();
 												ENetPacket * packet2 = enet_packet_create(p2.data,
 													p2.len,
 													ENET_PACKET_FLAG_RELIABLE);
@@ -3336,7 +3339,13 @@ label|Download Latest Version
 					else if (str.substr(0, 5) == "/asb "){
 						if (!canSB((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass)) continue;
 						cout << "ASB from " << (playerInfo(peer))->rawName <<  " in world " << (playerInfo(peer))->currentWorld << "with IP " << std::hex << peer->address.host << std::dec << " with message " << str.substr(5, cch.length() - 5 - 1) << endl;
-						GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/atomic_button.rttex"), str.substr(4, cch.length() - 4 - 1).c_str()), "audio/hub_open.wav"), 0));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnAddNotification")
+							.appendString("interface/atomic_button.rttex")
+							.appendString(str.substr(4, cch.length() - 4 - 1).c_str())
+							.appendString("audio/hub_open.wav")
+							.appendInt(0)
+							.build();
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -3358,7 +3367,10 @@ label|Download Latest Version
 
 							packet::consolemessage(peer, "`oYour atoms are suddenly aware of quantum tunneling. (Ghost in the shell mod added)");
 
-							GamePacket p2 = packetEnd(appendFloat(appendString(createPacket(), "OnSetPos"), pData->x, pData->y));
+							GamePacket p2 = GamePacketBuilder()
+								.appendString("OnSetPos")
+								.appendFloat(pData->x, pData->y)
+								.build();
 							memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 							ENetPacket * packet2 = enet_packet_create(p2.data,
 								p2.len,
@@ -3374,7 +3386,10 @@ label|Download Latest Version
 						else {
 							packet::consolemessage(peer, "`oYour body stops shimmering and returns to normal. (Ghost in the shell mod removed)");
 
-							GamePacket p2 = packetEnd(appendFloat(appendString(createPacket(), "OnSetPos"), pData->x1, pData->y1));
+							GamePacket p2 = GamePacketBuilder()
+								.appendString("OnSetPos")
+								.appendFloat(pData->x1, pData->y1)
+								.build();
 							memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 							ENetPacket * packet2 = enet_packet_create(p2.data,
 								p2.len,
@@ -3401,7 +3416,10 @@ label|Download Latest Version
 						}
 
 						string name = (playerInfo(peer))->displayName;
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "CP:0_PL:4_OID:_CT:[SB]_ `w** `5Super-Broadcast`` from `$`2" + name + "```` (in `$" + (playerInfo(peer))->currentWorld + "``) ** :`` `# " + str.substr(4, cch.length() - 4 - 1)));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnConsoleMessage")
+							.appendString("CP:0_PL:4_OID:_CT:[SB]_ `w** `5Super-Broadcast`` from `$`2" + name + "```` (in `$" + (playerInfo(peer))->currentWorld + "``) ** :`` `# " + str.substr(4, cch.length() - 4 - 1))
+							.build();
 						string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
 						BYTE* data = new BYTE[5 + text.length()];
 						BYTE zero = 0;
@@ -3451,7 +3469,10 @@ label|Download Latest Version
 						}
 
 						string name = (playerInfo(peer))->displayName;
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `5Super-Broadcast`` from `$`2" + name + "```` (in `4JAMMED``) ** :`` `# " + str.substr(5, cch.length() - 5 - 1)));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnConsoleMessage")
+							.appendString("`w** `5Super-Broadcast`` from `$`2" + name + "```` (in `4JAMMED``) ** :`` `# " + str.substr(5, cch.length() - 5 - 1))
+							.build();
 						string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
 						BYTE* data = new BYTE[5 + text.length()];
 						BYTE zero = 0;
@@ -3494,10 +3515,16 @@ label|Download Latest Version
 					else if (str.substr(0, 6) == "/radio") {
 						GamePacket p;
 						if ((playerInfo(peer))->radio) {
-							p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You won't see broadcasts anymore."));
+							p = GamePacketBuilder()
+								.appendString("OnConsoleMessage")
+								.appendString("You won't see broadcasts anymore.")
+								.build();
 							(playerInfo(peer))->radio = false;
 						} else {
-							p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You will now see broadcasts again."));
+							p = GamePacketBuilder()
+								.appendString("OnConsoleMessage")
+								.appendString("You will now see broadcasts again.")
+								.build();
 							(playerInfo(peer))->radio = true;
 						}
 
@@ -3511,7 +3538,13 @@ label|Download Latest Version
 					else if (str.substr(0, 6) == "/reset"){
 						if (!isSuperAdmin((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass)) break;
 						cout << "Restart from " << (playerInfo(peer))->displayName << endl;
-						GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/science_button.rttex"), "Restarting soon!"), "audio/mp3/suspended.mp3"), 0));
+						GamePacket p = GamePacketBuilder()
+							.appendString("OnAddNotification")
+							.appendString("interface/science_button.rttex")
+							.appendString("Restarting soon!")
+							.appendString("audio/mp3/suspended.mp3")
+							.appendInt(0)
+							.build();
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -3533,7 +3566,10 @@ label|Download Latest Version
 						sendState(peer);
 					}
 					else if (str == "/alt") {
-						GamePacket p2 = packetEnd(appendInt(appendString(createPacket(), "OnSetBetaMode"), 1));
+					GamePacket p2 = GamePacketBuilder()
+						.appendString("OnSetBetaMode")
+						.appendInt(1)
+						.build();
 						ENetPacket * packet2 = enet_packet_create(p2.data,
 						p2.len,
 						ENET_PACKET_FLAG_RELIABLE);
@@ -3610,7 +3646,15 @@ label|Download Latest Version
 					if (itemdathash == 0) {
 						enet_peer_disconnect_later(peer, 0);
 					}
-					GamePacket p = packetEnd(appendString(appendString(appendString(appendString(appendInt(appendString(createPacket(), "OnSuperMainStartAcceptLogonHrdxs47254722215a"), itemdathash), "ubistatic-a.akamaihd.net"), configCDN), "cc.cz.madkite.freedom org.aqua.gg idv.aqua.bulldog com.cih.gamecih2 com.cih.gamecih com.cih.game_cih cn.maocai.gamekiller com.gmd.speedtime org.dax.attack com.x0.strai.frep com.x0.strai.free org.cheatengine.cegui org.sbtools.gamehack com.skgames.traffikrider org.sbtoods.gamehaca com.skype.ralder org.cheatengine.cegui.xx.multi1458919170111 com.prohiro.macro me.autotouch.autotouch com.cygery.repetitouch.free com.cygery.repetitouch.pro com.proziro.zacro com.slash.gamebuster"), "proto=84|choosemusic=audio/mp3/about_theme.mp3|active_holiday=0|server_tick=226933875|clash_active=0|drop_lavacheck_faster=1|isPayingUser=0|"));
+					GamePacket p = GamePacketBuilder()
+						.appendString("OnSuperMainStartAcceptLogonHrdxs47254722215a")
+						.appendInt(itemdathash)
+						.appendString("ubistatic-a.akamaihd.net")
+						.appendString(configCDN)
+						.appendString("cc.cz.madkite.freedom org.aqua.gg idv.aqua.bulldog com.cih.gamecih2 com.cih.gamecih com.cih.game_cih cn.maocai.gamekiller com.gmd.speedtime org.dax.attack com.x0.strai.frep com.x0.strai.free org.cheatengine.cegui org.sbtools.gamehack com.skgames.traffikrider org.sbtoods.gamehaca com.skype.ralder org.cheatengine.cegui.xx.multi1458919170111 com.prohiro.macro me.autotouch.autotouch com.cygery.repetitouch.free com.cygery.repetitouch.pro com.proziro.zacro com.slash.gamebuster")
+						.appendString("proto=84|choosemusic=audio/mp3/about_theme.mp3|active_holiday=0|server_tick=226933875|clash_active=0|drop_lavacheck_faster=1|isPayingUser=0|")
+						.build();
+
 					//for (int i = 0; i < p.len; i++) cout << (int)*(p.data + i) << " ";
 					ENetPacket * packet = enet_packet_create(p.data,
 						p.len,
@@ -3677,7 +3721,12 @@ label|Download Latest Version
 						(playerInfo(event.peer))->country = "../cash_icon_overlay";
 					}
 
-					GamePacket p2 = packetEnd(appendString(appendString(appendInt(appendString(createPacket(), "SetHasGrowID"), (playerInfo(event.peer))->haveGrowId), (playerInfo(peer))->tankIDName), (playerInfo(peer))->tankIDPass));
+					GamePacket p2 = GamePacketBuilder()
+						.appendString("SetHasGrowID")
+						.appendInt(playerInfo(event.peer)->haveGrowId)
+						.appendString(playerInfo(peer)->tankIDName)
+						.appendString(playerInfo(peer)->tankIDPass)
+						.build();
 					ENetPacket * packet2 = enet_packet_create(p2.data,
 						p2.len,
 						ENET_PACKET_FLAG_RELIABLE);
@@ -3697,7 +3746,11 @@ label|Download Latest Version
 					sendWorldOffers(peer);
 					
 					// growmoji
-					GamePacket p2ssw = packetEnd(appendString(appendInt(appendString(createPacket(), "OnEmoticonDataChanged"), 201560520), "(wl)|Ä|1&(yes)|Ä‚|1&(no)|Äƒ|1&(love)|Ä„|1&(oops)|Ä…|1&(shy)|Ä†|1&(wink)|Ä‡|1&(tongue)|Äˆ|1&(agree)|Ä‰|1&(sleep)|ÄŠ|1&(punch)|Ä‹|1&(music)|ÄŒ|1&(build)|Ä|1&(megaphone)|ÄŽ|1&(sigh)|Ä|1&(mad)|Ä|1&(wow)|Ä‘|1&(dance)|Ä’|1&(see-no-evil)|Ä“|1&(bheart)|Ä”|1&(heart)|Ä•|1&(grow)|Ä–|1&(gems)|Ä—|1&(kiss)|Ä˜|1&(gtoken)|Ä™|1&(lol)|Äš|1&(smile)|Ä€|1&(cool)|Äœ|1&(cry)|Ä|1&(vend)|Äž|1&(bunny)|Ä›|1&(cactus)|ÄŸ|1&(pine)|Ä¤|1&(peace)|Ä£|1&(terror)|Ä¡|1&(troll)|Ä¢|1&(evil)|Ä¢|1&(fireworks)|Ä¦|1&(football)|Ä¥|1&(alien)|Ä§|1&(party)|Ä¨|1&(pizza)|Ä©|1&(clap)|Äª|1&(song)|Ä«|1&(ghost)|Ä¬|1&(nuke)|Ä­|1&(halo)|Ä®|1&(turkey)|Ä¯|1&(gift)|Ä°|1&(cake)|Ä±|1&(heartarrow)|Ä²|1&(lucky)|Ä³|1&(shamrock)|Ä´|1&(grin)|Äµ|1&(ill)|Ä¶|1&"));
+					GamePacket p2ssw = GamePacketBuilder()
+						.appendString("OnEmoticonDataChanged")
+						.appendInt(201560520)
+						.appendString("(wl)|Ä|1&(yes)|Ä‚|1&(no)|Äƒ|1&(love)|Ä„|1&(oops)|Ä…|1&(shy)|Ä†|1&(wink)|Ä‡|1&(tongue)|Äˆ|1&(agree)|Ä‰|1&(sleep)|ÄŠ|1&(punch)|Ä‹|1&(music)|ÄŒ|1&(build)|Ä|1&(megaphone)|ÄŽ|1&(sigh)|Ä|1&(mad)|Ä|1&(wow)|Ä‘|1&(dance)|Ä’|1&(see-no-evil)|Ä“|1&(bheart)|Ä”|1&(heart)|Ä•|1&(grow)|Ä–|1&(gems)|Ä—|1&(kiss)|Ä˜|1&(gtoken)|Ä™|1&(lol)|Äš|1&(smile)|Ä€|1&(cool)|Äœ|1&(cry)|Ä|1&(vend)|Äž|1&(bunny)|Ä›|1&(cactus)|ÄŸ|1&(pine)|Ä¤|1&(peace)|Ä£|1&(terror)|Ä¡|1&(troll)|Ä¢|1&(evil)|Ä¢|1&(fireworks)|Ä¦|1&(football)|Ä¥|1&(alien)|Ä§|1&(party)|Ä¨|1&(pizza)|Ä©|1&(clap)|Äª|1&(song)|Ä«|1&(ghost)|Ä¬|1&(nuke)|Ä­|1&(halo)|Ä®|1&(turkey)|Ä¯|1&(gift)|Ä°|1&(cake)|Ä±|1&(heartarrow)|Ä²|1&(lucky)|Ä³|1&(shamrock)|Ä´|1&(grin)|Äµ|1&(ill)|Ä¶|1&")
+						.build();
 					ENetPacket * packet2ssw = enet_packet_create(p2ssw.data,
 						p2ssw.len,
 						ENET_PACKET_FLAG_RELIABLE);
@@ -3755,7 +3808,10 @@ label|Download Latest Version
 							if (act.length() > 30) {
 								packet::consolemessage(peer, "`4Sorry, but world names with more than 30 characters are not allowed!");
 								(playerInfo(peer))->currentWorld = "EXIT";
-								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
+								GamePacket p2 = GamePacketBuilder()
+									.appendString("OnFailedToEnterWorld")
+									.appendIntx(1)
+									.build();
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -3791,7 +3847,10 @@ label|Download Latest Version
 						catch (int e) {
 							if (e == 1) {
 								(playerInfo(peer))->currentWorld = "EXIT";
-								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
+								GamePacket p2 = GamePacketBuilder()
+									.appendString("OnFailedToEnterWorld")
+									.appendIntx(1)
+									.build();
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -3801,7 +3860,10 @@ label|Download Latest Version
 							}
 							else if (e == 2) {
 								(playerInfo(peer))->currentWorld = "EXIT";
-								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
+								GamePacket p2 = GamePacketBuilder()
+									.appendString("OnFailedToEnterWorld")
+									.appendIntx(1)
+									.build();
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -3811,7 +3873,10 @@ label|Download Latest Version
 							}
 							else if (e == 3) {
 								(playerInfo(peer))->currentWorld = "EXIT";
-								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
+								GamePacket p2 = GamePacketBuilder()
+									.appendString("OnFailedToEnterWorld")
+									.appendIntx(1)
+									.build();
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
 									ENET_PACKET_FLAG_RELIABLE);
@@ -3821,7 +3886,10 @@ label|Download Latest Version
 							}
 							else {
 								(playerInfo(peer))->currentWorld = "EXIT";
-								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
+								GamePacket p2 = GamePacketBuilder()
+									.appendString("OnFailedToEnterWorld")
+									.appendIntx(1)
+									.build();
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
 									ENET_PACKET_FLAG_RELIABLE);
