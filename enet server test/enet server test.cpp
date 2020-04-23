@@ -538,7 +538,6 @@ struct PlayerInfo {
 	bool haveSuperSupporterName = false; // 16777216
 	bool haveSupperPineapple = false; // 33554432
 	bool isGhost = false;
-	//bool 
 	int skinColor = 0x8295C3FF; //normal SKin color like gt!
 
 	PlayerInventory inventory;
@@ -698,6 +697,10 @@ struct Admin {
 
 vector<Admin> admins;
 
+PlayerInfo* playerInfo(EnetPeer* peer) {
+    return (PlayerInfo*)(peer->data);
+}
+
 int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 	std::ifstream ifs("players/" + PlayerDB::getProperName(username) + ".json");
 	if (ifs.is_open()) {
@@ -706,7 +709,7 @@ int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 		string pss = j["password"];
 		int adminLevel = j["adminLevel"];
 		if (verifyPassword(password, pss)) {
-			((PlayerInfo*)(peer->data))->hasLogon = true;
+		    playerInfo(peer)->hasLogon = true;
 			//after verify password add adminlevel not before
 			bool found = false;
 			for (int i = 0; i < admins.size(); i++) {
@@ -733,7 +736,7 @@ int PlayerDB::playerLogin(ENetPeer* peer, string username, string password) {
 					continue;
 				if (currentPeer == peer)
 					continue;
-				if (((PlayerInfo*)(currentPeer->data))->rawName == PlayerDB::getProperName(username))
+				if ((playerInfo(currentPeer))->rawName == PlayerDB::getProperName(username))
 				{
 					{
 						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "Someone else logged into this account!"));
@@ -1024,7 +1027,7 @@ void WorldDB::saveRedundant()
 		{
 			if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 				continue;
-			if (((PlayerInfo*)(currentPeer->data))->currentWorld == worlds.at(i).name)
+			if ((playerInfo(currentPeer))->currentWorld == worlds.at(i).name)
 				canBeFree = false;
 		}
 		if (canBeFree)
@@ -1052,7 +1055,7 @@ void saveAllWorlds() // atexit hack plz fix
 WorldInfo* getPlyersWorld(ENetPeer* peer)
 {
 	try {
-		return worldDB.get2(((PlayerInfo*)(peer->data))->currentWorld).ptr;
+		return worldDB.get2((playerInfo(peer))->currentWorld).ptr;
 	} catch(int e) {
 		return NULL;
 	}
@@ -1644,7 +1647,7 @@ bool isSuperAdmin(string username, string password) {
 
 bool isHere(ENetPeer* peer, ENetPeer* peer2)
 {
-	return ((PlayerInfo*)(peer->data))->currentWorld == ((PlayerInfo*)(peer2->data))->currentWorld;
+	return (playerInfo(peer))->currentWorld == ((PlayerInfo*)(peer2->data))->currentWorld;
 }
 
 void sendInventory(ENetPeer* peer, PlayerInventory inventory)
@@ -1773,10 +1776,10 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 			{
 				if (isHere(peer, currentPeer))
 				{
-					string netIdS = std::to_string(((PlayerInfo*)(currentPeer->data))->netID);
-					packet::onspawn(peer, "spawn|avatar\nnetID|" + netIdS + "\nuserID|" + netIdS + "\ncolrect|0|0|20|30\nposXY|" + std::to_string(((PlayerInfo*)(currentPeer->data))->x) + "|" + std::to_string(((PlayerInfo*)(currentPeer->data))->y) + "\nname|``" + ((PlayerInfo*)(currentPeer->data))->displayName + "``\ncountry|" + ((PlayerInfo*)(currentPeer->data))->country + "\ninvis|0\nmstate|0\nsmstate|0\n"); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
-					string netIdS2 = std::to_string(((PlayerInfo*)(peer->data))->netID);
-					packet::onspawn(currentPeer, "spawn|avatar\nnetID|" + netIdS2 + "\nuserID|" + netIdS2 + "\ncolrect|0|0|20|30\nposXY|" + std::to_string(((PlayerInfo*)(peer->data))->x) + "|" + std::to_string(((PlayerInfo*)(peer->data))->y) + "\nname|``" + ((PlayerInfo*)(peer->data))->displayName + "``\ncountry|" + ((PlayerInfo*)(peer->data))->country + "\ninvis|0\nmstate|0\nsmstate|0\n"); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
+					string netIdS = std::to_string((playerInfo(currentPeer))->netID);
+					packet::onspawn(peer, "spawn|avatar\nnetID|" + netIdS + "\nuserID|" + netIdS + "\ncolrect|0|0|20|30\nposXY|" + std::to_string((playerInfo(currentPeer))->x) + "|" + std::to_string((playerInfo(currentPeer))->y) + "\nname|``" + (playerInfo(currentPeer))->displayName + "``\ncountry|" + (playerInfo(currentPeer))->country + "\ninvis|0\nmstate|0\nsmstate|0\n"); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
+					string netIdS2 = std::to_string((playerInfo(peer))->netID);
+					packet::onspawn(currentPeer, "spawn|avatar\nnetID|" + netIdS2 + "\nuserID|" + netIdS2 + "\ncolrect|0|0|20|30\nposXY|" + std::to_string((playerInfo(peer))->x) + "|" + std::to_string((playerInfo(peer))->y) + "\nname|``" + (playerInfo(peer))->displayName + "``\ncountry|" + (playerInfo(peer))->country + "\ninvis|0\nmstate|0\nsmstate|0\n"); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
 				}
 			}
 		}
@@ -1794,8 +1797,8 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				continue;
 			if (isHere(peer, currentPeer))
 			{
-				GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(peer->data))->cloth_hair, ((PlayerInfo*)(peer->data))->cloth_shirt, ((PlayerInfo*)(peer->data))->cloth_pants), ((PlayerInfo*)(peer->data))->cloth_feet, ((PlayerInfo*)(peer->data))->cloth_face, ((PlayerInfo*)(peer->data))->cloth_hand), ((PlayerInfo*)(peer->data))->cloth_back, ((PlayerInfo*)(peer->data))->cloth_mask, ((PlayerInfo*)(peer->data))->cloth_necklace), ((PlayerInfo*)(peer->data))->skinColor), 0.0f, 0.0f, 0.0f));
-				memcpy(p3.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4); // ffloor
+				GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), (playerInfo(peer))->cloth_hair, (playerInfo(peer))->cloth_shirt, (playerInfo(peer))->cloth_pants), (playerInfo(peer))->cloth_feet, (playerInfo(peer))->cloth_face, (playerInfo(peer))->cloth_hand), (playerInfo(peer))->cloth_back, (playerInfo(peer))->cloth_mask, (playerInfo(peer))->cloth_necklace), (playerInfo(peer))->skinColor), 0.0f, 0.0f, 0.0f));
+				memcpy(p3.data + 8, &((playerInfo(peer))->netID), 4); // ffloor
 				ENetPacket * packet3 = enet_packet_create(p3.data,
 					p3.len,
 					ENET_PACKET_FLAG_RELIABLE);
@@ -1803,8 +1806,8 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				enet_peer_send(currentPeer, 0, packet3);
 				delete p3.data;
 				//enet_host_flush(server);
-				GamePacket p4 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(currentPeer->data))->cloth_hair, ((PlayerInfo*)(currentPeer->data))->cloth_shirt, ((PlayerInfo*)(currentPeer->data))->cloth_pants), ((PlayerInfo*)(currentPeer->data))->cloth_feet, ((PlayerInfo*)(currentPeer->data))->cloth_face, ((PlayerInfo*)(currentPeer->data))->cloth_hand), ((PlayerInfo*)(currentPeer->data))->cloth_back, ((PlayerInfo*)(currentPeer->data))->cloth_mask, ((PlayerInfo*)(currentPeer->data))->cloth_necklace), ((PlayerInfo*)(currentPeer->data))->skinColor), 0.0f, 0.0f, 0.0f));
-				memcpy(p4.data + 8, &(((PlayerInfo*)(currentPeer->data))->netID), 4); // ffloor
+				GamePacket p4 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), (playerInfo(currentPeer))->cloth_hair, (playerInfo(currentPeer))->cloth_shirt, (playerInfo(currentPeer))->cloth_pants), (playerInfo(currentPeer))->cloth_feet, (playerInfo(currentPeer))->cloth_face, (playerInfo(currentPeer))->cloth_hand), (playerInfo(currentPeer))->cloth_back, (playerInfo(currentPeer))->cloth_mask, (playerInfo(currentPeer))->cloth_necklace), (playerInfo(currentPeer))->skinColor), 0.0f, 0.0f, 0.0f));
+				memcpy(p4.data + 8, &((playerInfo(currentPeer))->netID), 4); // ffloor
 				ENetPacket * packet4 = enet_packet_create(p4.data,
 					p4.len,
 					ENET_PACKET_FLAG_RELIABLE);
@@ -1818,7 +1821,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 	void sendClothes(ENetPeer* peer)
 	{
 		ENetPeer * currentPeer;
-		GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), ((PlayerInfo*)(peer->data))->cloth_hair, ((PlayerInfo*)(peer->data))->cloth_shirt, ((PlayerInfo*)(peer->data))->cloth_pants), ((PlayerInfo*)(peer->data))->cloth_feet, ((PlayerInfo*)(peer->data))->cloth_face, ((PlayerInfo*)(peer->data))->cloth_hand), ((PlayerInfo*)(peer->data))->cloth_back, ((PlayerInfo*)(peer->data))->cloth_mask, ((PlayerInfo*)(peer->data))->cloth_necklace), ((PlayerInfo*)(peer->data))->skinColor), 0.0f, 0.0f, 0.0f));
+		GamePacket p3 = packetEnd(appendFloat(appendIntx(appendFloat(appendFloat(appendFloat(appendString(createPacket(), "OnSetClothing"), (playerInfo(peer))->cloth_hair, (playerInfo(peer))->cloth_shirt, (playerInfo(peer))->cloth_pants), (playerInfo(peer))->cloth_feet, (playerInfo(peer))->cloth_face, (playerInfo(peer))->cloth_hand), (playerInfo(peer))->cloth_back, (playerInfo(peer))->cloth_mask, (playerInfo(peer))->cloth_necklace), (playerInfo(peer))->skinColor), 0.0f, 0.0f, 0.0f));
 		for (currentPeer = server->peers;
 			currentPeer < &server->peers[server->peerCount];
 			++currentPeer)
@@ -1828,7 +1831,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 			if (isHere(peer, currentPeer))
 			{
 				
-				memcpy(p3.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4); // ffloor
+				memcpy(p3.data + 8, &((playerInfo(peer))->netID), 4); // ffloor
 				ENetPacket * packet3 = enet_packet_create(p3.data,
 					p3.len,
 					ENET_PACKET_FLAG_RELIABLE);
@@ -1855,7 +1858,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 			{
 				if (isHere(peer, currentPeer))
 				{
-					data->netID = ((PlayerInfo*)(peer->data))->netID;
+					data->netID = (playerInfo(peer))->netID;
 
 					SendPacketRaw(4, packPlayerMoving(data), 56, 0, currentPeer, ENET_PACKET_FLAG_RELIABLE);
 				}
@@ -1873,7 +1876,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 		{
 			if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 				continue;
-			if (((PlayerInfo*)(currentPeer->data))->currentWorld == name)
+			if ((playerInfo(currentPeer))->currentWorld == name)
 				count++;
 		}
 		return count;
@@ -1891,7 +1894,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				continue;
 			if (isHere(peer, currentPeer))
 			{
-				GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), ((PlayerInfo*)(peer->data))->netID), "`w[" + ((PlayerInfo*)(peer->data))->displayName + " `wspun the wheel and got `6"+std::to_string(val)+"`w!]"), 0));
+				GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), (playerInfo(peer))->netID), "`w[" + (playerInfo(peer))->displayName + " `wspun the wheel and got `6"+std::to_string(val)+"`w!]"), 0));
 				ENetPacket * packet2 = enet_packet_create(p2.data,
 					p2.len,
 					ENET_PACKET_FLAG_RELIABLE);
@@ -1907,7 +1910,7 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 
 	void sendNothingHappened(ENetPeer* peer, int x, int y) {
 		PlayerMoving data;
-		data.netID = ((PlayerInfo*)(peer->data))->netID;
+		data.netID = (playerInfo(peer))->netID;
 		data.packetType = 0x8;
 		data.plantingTree = 0;
 		data.netID = -1;
@@ -1967,14 +1970,14 @@ void loadnews() {
 		if (world == NULL) return;
 		if (x<0 || y<0 || x>world->width - 1 || y>world->height - 1||tile > itemDefs.size()) return; // needs - 1
 		sendNothingHappened(peer,x,y);
-		if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass))
+		if (!isSuperAdmin((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass))
 		{
 			if (world->items[x + (y*world->width)].foreground == 6 || world->items[x + (y*world->width)].foreground == 8 || world->items[x + (y*world->width)].foreground == 3760)
 				return;
 			if (tile == 6 || tile == 8 || tile == 3760 || tile == 6864)
 				return;
 		}
-		if (world->name == "ADMIN" && !getAdminLevel(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass))
+		if (world->name == "ADMIN" && !getAdminLevel((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass))
 		{
 			if (world->items[x + (y*world->width)].foreground == 758)
 				sendRoulete(peer, x, y);
@@ -1982,7 +1985,7 @@ void loadnews() {
 		}
 		if (world->name != "ADMIN") {
 			if (world->owner != "") {
-				if (((PlayerInfo*)(peer->data))->rawName == world->owner) {
+				if ((playerInfo(peer))->rawName == world->owner) {
 					// WE ARE GOOD TO GO
 					if (tile == 32) {
 						if (world->items[x + (y*world->width)].foreground == 242 or world->items[x + (y*world->width)].foreground == 202 or world->items[x + (y*world->width)].foreground == 204 or world->items[x + (y*world->width)].foreground == 206 or world->items[x + (y*world->width)].foreground == 2408 or world->items[x + (y*world->width)].foreground == 5980 or world->items[x + (y*world->width)].foreground == 2950 or world->items[x + (y*world->width)].foreground == 5814 or world->items[x + (y*world->width)].foreground == 4428 or world->items[x + (y*world->width)].foreground == 1796 or world->items[x + (y*world->width)].foreground == 4802 or world->items[x + (y*world->width)].foreground == 4994 or world->items[x + (y*world->width)].foreground == 5260 or world->items[x + (y*world->width)].foreground == 7188)
@@ -2084,16 +2087,16 @@ void loadnews() {
 
 		}
 		else {
-			for (int i = 0; i < ((PlayerInfo*)(peer->data))->inventory.items.size(); i++)
+			for (int i = 0; i < (playerInfo(peer))->inventory.items.size(); i++)
 			{
-				if (((PlayerInfo*)(peer->data))->inventory.items.at(i).itemID == tile)
+				if ((playerInfo(peer))->inventory.items.at(i).itemID == tile)
 				{
-					if ((unsigned int)((PlayerInfo*)(peer->data))->inventory.items.at(i).itemCount>1)
+					if ((unsigned int)(playerInfo(peer))->inventory.items.at(i).itemCount>1)
 					{
-						((PlayerInfo*)(peer->data))->inventory.items.at(i).itemCount--;
+						(playerInfo(peer))->inventory.items.at(i).itemCount--;
 					}
 					else {
-						((PlayerInfo*)(peer->data))->inventory.items.erase(((PlayerInfo*)(peer->data))->inventory.items.begin() + i);
+						(playerInfo(peer))->inventory.items.erase((playerInfo(peer))->inventory.items.begin() + i);
 						
 					}
 				}
@@ -2106,7 +2109,7 @@ void loadnews() {
 				if (world->items[x + (y * world->width)].foreground != 0)return;
 				world->items[x + (y*world->width)].foreground = tile;
 				if (tile == 242) {
-					world->owner = ((PlayerInfo*)(peer->data))->rawName;
+					world->owner = (playerInfo(peer))->rawName;
 					world->isPublic = false;
 					ENetPeer * currentPeer;
 
@@ -2117,7 +2120,7 @@ void loadnews() {
 						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 							continue;
 						if (isHere(peer, currentPeer)) {
-							packet::consolemessage(peer, "`3[`w" + world->name + " `ohas been World Locked by `2" + ((PlayerInfo*)(peer->data))->displayName + "`3]");
+							packet::consolemessage(peer, "`3[`w" + world->name + " `ohas been World Locked by `2" + (playerInfo(peer))->displayName + "`3]");
 						}
 					}
 				}
@@ -2275,8 +2278,8 @@ void loadnews() {
 		{
 			if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 				continue;
-			if (((PlayerInfo*)(currentPeer->data))->netID == netID)
-				name = ((PlayerInfo*)(currentPeer->data))->displayName;
+			if ((playerInfo(currentPeer))->netID == netID)
+				name = (playerInfo(currentPeer))->displayName;
 
 		}
 		GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "CP:0_PL:4_OID:_CT:[W]_ `o<`w" + name + "`o> " + message));
@@ -2322,9 +2325,9 @@ void loadnews() {
 				continue;
 			if (isHere(peer, currentPeer))
 			{
-				if(((PlayerInfo*)(currentPeer->data))->isGhost)
+				if((playerInfo(currentPeer))->isGhost)
 					continue;
-				GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), ((PlayerInfo*)(currentPeer->data))->netID), ((PlayerInfo*)(currentPeer->data))->displayName), 1));
+				GamePacket p2 = packetEnd(appendIntx(appendString(appendIntx(appendString(createPacket(), "OnTalkBubble"), (playerInfo(currentPeer))->netID), (playerInfo(currentPeer))->displayName), 1));
 				ENetPacket * packet2 = enet_packet_create(p2.data,
 					p2.len,
 					ENET_PACKET_FLAG_RELIABLE);
@@ -2341,7 +2344,7 @@ void loadnews() {
 #ifdef TOTAL_LOG
 		cout << "Entering a world..." << endl;
 #endif
-		((PlayerInfo*)(peer->data))->joinClothesUpdated = false;
+		(playerInfo(peer))->joinClothesUpdated = false;
 		
 		 string worldName = worldInfo->name; 
 		int xSize = worldInfo->width;
@@ -2420,7 +2423,7 @@ void loadnews() {
 				data.plantingTree = worldInfo->items[i].foreground;
 				SendPacketRaw(4, packPlayerMoving(&data), 56, 0, peer, ENET_PACKET_FLAG_RELIABLE);
 		}
-		((PlayerInfo*)(peer->data))->currentWorld = worldInfo->name;
+		(playerInfo(peer))->currentWorld = worldInfo->name;
 		if (worldInfo->owner != "") {
 			packet::consolemessage(peer, "`#[`0" + worldInfo->name + " `9World Locked by " + worldInfo->owner + "`#]");
 		}
@@ -2489,7 +2492,7 @@ void loadnews() {
 
 	void sendState(ENetPeer* peer) {
 		//return; // TODO
-		PlayerInfo* info = ((PlayerInfo*)(peer->data));
+		PlayerInfo* info = (playerInfo(peer));
 		int netID = info->netID;
 		ENetPeer * currentPeer;
 		int state = getState(info);
@@ -2526,7 +2529,7 @@ void loadnews() {
 
 	void sendWorldOffers(ENetPeer* peer)
 	{
-		if (!((PlayerInfo*)(peer->data))->isIn) return;
+		if (!(playerInfo(peer))->isIn) return;
 		vector<WorldInfo> worlds = worldDB.getRandomWorlds();
 		string worldOffers = "default|";
 		if (worlds.size() > 0) {
@@ -2667,7 +2670,7 @@ label|Download Latest Version
 			/* Get the string ip from peer */
 			char clientConnection[16];
 			enet_address_get_host_ip(&peer->address, clientConnection, 16);
-			((PlayerInfo*)(peer->data))->charIP = clientConnection;
+			(playerInfo(peer))->charIP = clientConnection;
 			if (count > 3)
 			{
 				packet::consolemessage(peer, "`rToo many accounts are logged on from this IP. Log off one account before playing please.``");
@@ -2682,7 +2685,7 @@ label|Download Latest Version
 		}
 		case ENET_EVENT_TYPE_RECEIVE:
 		{
-			if (((PlayerInfo*)(peer->data))->isUpdating)
+			if ((playerInfo(peer))->isUpdating)
 			{
 				cout << "packet drop" << endl;
 				continue;
@@ -2721,8 +2724,8 @@ label|Download Latest Version
 							continue;
 
 						if (isHere(peer, currentPeer)) {
-							if (((PlayerInfo*)(currentPeer->data))->netID == id) {
-								string name = ((PlayerInfo*)(currentPeer->data))->displayName;
+							if ((playerInfo(currentPeer))->netID == id) {
+								string name = (playerInfo(currentPeer))->displayName;
 								packet::dialog(peer, "set_default_color|`o\nadd_label_with_icon|big|"+name+"|left|18|\nadd_spacer|small|\n\nadd_quick_exit|\nend_dialog|player_info||Close|");
 							}
 
@@ -2758,7 +2761,7 @@ label|Download Latest Version
 						}
 
 					}
-					((PlayerInfo*)(peer->data))->skinColor = id;
+					(playerInfo(peer))->skinColor = id;
 					sendClothes(peer);
 				}
 				if (cch.find("action|respawn") == 0)
@@ -2785,7 +2788,7 @@ label|Download Latest Version
 						data.punchY = -1;
 						data.XSpeed = 0;
 						data.YSpeed = 0;
-						data.netID = ((PlayerInfo*)(peer->data))->netID;
+						data.netID = (playerInfo(peer))->netID;
 						data.plantingTree = 0x0;
 						SendPacketRaw(4, packPlayerMoving(&data), 56, 0, peer, ENET_PACKET_FLAG_RELIABLE);
 					}
@@ -2802,7 +2805,7 @@ label|Download Latest Version
 							}
 						}
 						GamePacket p2 = packetEnd(appendFloat(appendString(createPacket(), "OnSetPos"), x,y));
-						memcpy(p2.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4);
+						memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 						ENetPacket * packet2 = enet_packet_create(p2.data,
 							p2.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -2823,7 +2826,7 @@ label|Download Latest Version
 							}
 						}
 						GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnSetFreezeState"), 0));
-						memcpy(p2.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4);
+						memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 						ENetPacket * packet2 = enet_packet_create(p2.data,
 							p2.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -2903,8 +2906,8 @@ label|Download Latest Version
 							}
 						}
 					}
-					if (btn == "worldPublic") if (((PlayerInfo*)(peer->data))->rawName == getPlyersWorld(peer)->owner) getPlyersWorld(peer)->isPublic = true;
-					if(btn == "worldPrivate") if (((PlayerInfo*)(peer->data))->rawName == getPlyersWorld(peer)->owner) getPlyersWorld(peer)->isPublic = false;
+					if (btn == "worldPublic") if ((playerInfo(peer))->rawName == getPlyersWorld(peer)->owner) getPlyersWorld(peer)->isPublic = true;
+					if(btn == "worldPrivate") if ((playerInfo(peer))->rawName == getPlyersWorld(peer)->owner) getPlyersWorld(peer)->isPublic = false;
 #ifdef REGISTRATION
 					if (isRegisterDialog) {
 
@@ -2942,13 +2945,13 @@ label|Download Latest Version
 				string dropText = "action|drop\n|itemID|";
 				if (cch.find(dropText) == 0)
 				{
-					sendDrop(peer, -1, ((PlayerInfo*)(peer->data))->x + (32 * (((PlayerInfo*)(peer->data))->isRotatedLeft?-1:1)), ((PlayerInfo*)(peer->data))->y, atoi(cch.substr(dropText.length(), cch.length() - dropText.length() - 1).c_str()), 1, 0);
+					sendDrop(peer, -1, (playerInfo(peer))->x + (32 * ((playerInfo(peer))->isRotatedLeft?-1:1)), (playerInfo(peer))->y, atoi(cch.substr(dropText.length(), cch.length() - dropText.length() - 1).c_str()), 1, 0);
 				}
 				if (cch.find("text|") != std::string::npos){
-					PlayerInfo* pData = ((PlayerInfo*)(peer->data));
+					PlayerInfo* pData = (playerInfo(peer));
 					if (str == "/mod")
 					{
-						((PlayerInfo*)(peer->data))->canWalkInBlocks = true;
+						(playerInfo(peer))->canWalkInBlocks = true;
 						sendState(peer);
 					}
 					else if (str.substr(0, 7) == "/state ")
@@ -2962,35 +2965,35 @@ label|Download Latest Version
 						data.punchY = 0;
 						data.XSpeed = 300;
 						data.YSpeed = 600;
-						data.netID = ((PlayerInfo*)(peer->data))->netID;
+						data.netID = (playerInfo(peer))->netID;
 						data.plantingTree = atoi(str.substr(7, cch.length() - 7 - 1).c_str());
 						SendPacketRaw(4, packPlayerMoving(&data), 56, 0, peer, ENET_PACKET_FLAG_RELIABLE);
 					}
 					else if (str == "/unequip")
 					{
-						((PlayerInfo*)(peer->data))->cloth_hair = 0;
-						((PlayerInfo*)(peer->data))->cloth_shirt = 0;
-						((PlayerInfo*)(peer->data))->cloth_pants = 0;
-						((PlayerInfo*)(peer->data))->cloth_feet = 0;
-						((PlayerInfo*)(peer->data))->cloth_face = 0;
-						((PlayerInfo*)(peer->data))->cloth_hand = 0;
-						((PlayerInfo*)(peer->data))->cloth_back = 0;
-						((PlayerInfo*)(peer->data))->cloth_mask = 0;
-						((PlayerInfo*)(peer->data))->cloth_necklace = 0;
+						(playerInfo(peer))->cloth_hair = 0;
+						(playerInfo(peer))->cloth_shirt = 0;
+						(playerInfo(peer))->cloth_pants = 0;
+						(playerInfo(peer))->cloth_feet = 0;
+						(playerInfo(peer))->cloth_face = 0;
+						(playerInfo(peer))->cloth_hand = 0;
+						(playerInfo(peer))->cloth_back = 0;
+						(playerInfo(peer))->cloth_mask = 0;
+						(playerInfo(peer))->cloth_necklace = 0;
 						sendClothes(peer);
 					}
 					else if (str == "/wizard")
 					{
-						((PlayerInfo*)(peer->data))->cloth_hair = 0;
-						((PlayerInfo*)(peer->data))->cloth_shirt = 0;
-						((PlayerInfo*)(peer->data))->cloth_pants = 0;
-						((PlayerInfo*)(peer->data))->cloth_feet = 0;
-						((PlayerInfo*)(peer->data))->cloth_face = 1790;
-						((PlayerInfo*)(peer->data))->cloth_hand = 0;
-						((PlayerInfo*)(peer->data))->cloth_back = 0;
-						((PlayerInfo*)(peer->data))->cloth_mask = 0;
-						((PlayerInfo*)(peer->data))->cloth_necklace = 0;
-						((PlayerInfo*)(peer->data))->skinColor = 2;
+						(playerInfo(peer))->cloth_hair = 0;
+						(playerInfo(peer))->cloth_shirt = 0;
+						(playerInfo(peer))->cloth_pants = 0;
+						(playerInfo(peer))->cloth_feet = 0;
+						(playerInfo(peer))->cloth_face = 1790;
+						(playerInfo(peer))->cloth_hand = 0;
+						(playerInfo(peer))->cloth_back = 0;
+						(playerInfo(peer))->cloth_mask = 0;
+						(playerInfo(peer))->cloth_necklace = 0;
+						(playerInfo(peer))->skinColor = 2;
 						sendClothes(peer);
 						packet::consolemessage(peer, "`^Legendary Wizard Set Mod has been Enabled! ");
 					}
@@ -3026,8 +3029,8 @@ label|Download Latest Version
 							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 								continue;
 
-							if (getAdminLevel(((PlayerInfo*)(currentPeer->data))->rawName, ((PlayerInfo*)(currentPeer->data))->tankIDPass) > 0) {
-								x.append("`#@" + ((PlayerInfo*)(currentPeer->data))->rawName + "``, ");
+							if (getAdminLevel((playerInfo(currentPeer))->rawName, (playerInfo(currentPeer))->tankIDPass) > 0) {
+								x.append("`#@" + (playerInfo(currentPeer))->rawName + "``, ");
 							}
 
 						}
@@ -3040,7 +3043,7 @@ label|Download Latest Version
 						enet_peer_send(peer, 0, packet);
 					}
 					else if (str.substr(0,10) == "/ducttape ") {
-						if (getAdminLevel(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass) > 0) {
+						if (getAdminLevel((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass) > 0) {
 							string name = str.substr(10, str.length());
 
 							ENetPeer* currentPeer;
@@ -3054,11 +3057,11 @@ label|Download Latest Version
 								if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 									continue;
 
-								if (((PlayerInfo*)(currentPeer->data))->rawName == name) {
+								if ((playerInfo(currentPeer))->rawName == name) {
 									found = true;
-									if (((PlayerInfo*)(currentPeer->data))->taped) {
-										((PlayerInfo*)(currentPeer->data))->taped = false;
-										((PlayerInfo*)(currentPeer->data))->isDuctaped = false;
+									if ((playerInfo(currentPeer))->taped) {
+										(playerInfo(currentPeer))->taped = false;
+										(playerInfo(currentPeer))->isDuctaped = false;
 										
 										packet::consolemessage(peer, "`2You are no longer duct-taped!");
 										sendState(currentPeer);
@@ -3071,8 +3074,8 @@ label|Download Latest Version
 										}
 									}
 									else {
-										((PlayerInfo*)(currentPeer->data))->taped = true;
-										((PlayerInfo*)(currentPeer->data))->isDuctaped = true;
+										(playerInfo(currentPeer))->taped = true;
+										(playerInfo(currentPeer))->isDuctaped = true;
 							
 										GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`4You have been duct-taped!"));
 										ENetPacket * packet = enet_packet_create(p.data,
@@ -3113,14 +3116,14 @@ label|Download Latest Version
 						packet::dialog(peer, newslist);
 					}
 					else if (str == "/loadnews"){
-						if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
+						if (!isSuperAdmin((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass)) break;
 						loadnews();//To load news instead of close server and run it again
 					}
 					else if (str.substr(0, 6) == "/nick ") {
 						string nam1e = "```0" + str.substr(6, cch.length() - 6 - 1);
-						((PlayerInfo*)(event.peer->data))->displayName = str.substr(6, cch.length() - 6 - 1);
+						(playerInfo(event.peer))->displayName = str.substr(6, cch.length() - 6 - 1);
 						GamePacket p3 = packetEnd(appendString(appendString(createPacket(), "OnNameChanged"), nam1e));
-						memcpy(p3.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4);
+						memcpy(p3.data + 8, &((playerInfo(peer))->netID), 4);
 						ENetPacket * packet3 = enet_packet_create(p3.data,
 							p3.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -3155,7 +3158,7 @@ label|Download Latest Version
 						int lol = atoi(str.substr(6).c_str());
 			
 						GamePacket p2 = packetEnd(appendIntx(appendIntx(appendIntx(appendIntx(appendString(createPacket(), "OnGuildDataChanged"), 1), 2), lol), 3));
-						memcpy(p2.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4);
+						memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 						ENetPacket * packet3 = enet_packet_create(p2.data,
 							p2.len,
 							ENET_PACKET_FLAG_RELIABLE);
@@ -3176,7 +3179,7 @@ label|Download Latest Version
 					else if (str.substr(0, 9) == "/weather ") {
 							if (world->name != "ADMIN") {
 								if (world->owner != "") {
-									if (((PlayerInfo*)(peer->data))->rawName == world->owner || isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass))
+									if ((playerInfo(peer))->rawName == world->owner || isSuperAdmin((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass))
 
 									{
 										ENetPeer* currentPeer;
@@ -3189,7 +3192,7 @@ label|Download Latest Version
 												continue;
 											if (isHere(peer, currentPeer))
 											{
-												packet::consolemessage(peer, "`oPlayer `2" + ((PlayerInfo*)(peer->data))->displayName + "`o has just changed the world's weather!");
+												packet::consolemessage(peer, "`oPlayer `2" + (playerInfo(peer))->displayName + "`o has just changed the world's weather!");
 
 												GamePacket p2 = packetEnd(appendInt(appendString(createPacket(), "OnSetCurrentWeather"), atoi(str.substr(9).c_str())));
 												ENetPacket * packet2 = enet_packet_create(p2.data,
@@ -3220,8 +3223,8 @@ label|Download Latest Version
 						packet::consolemessage(peer, "There are "+std::to_string(count)+" people online out of 1024 limit.");
 					}
 					else if (str.substr(0, 5) == "/asb "){
-						if (!canSB(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) continue;
-						cout << "ASB from " << ((PlayerInfo*)(peer->data))->rawName <<  " in world " << ((PlayerInfo*)(peer->data))->currentWorld << "with IP " << std::hex << peer->address.host << std::dec << " with message " << str.substr(5, cch.length() - 5 - 1) << endl;
+						if (!canSB((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass)) continue;
+						cout << "ASB from " << (playerInfo(peer))->rawName <<  " in world " << (playerInfo(peer))->currentWorld << "with IP " << std::hex << peer->address.host << std::dec << " with message " << str.substr(5, cch.length() - 5 - 1) << endl;
 						GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/atomic_button.rttex"), str.substr(4, cch.length() - 4 - 1).c_str()), "audio/hub_open.wav"), 0));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
@@ -3245,7 +3248,7 @@ label|Download Latest Version
 							packet::consolemessage(peer, "`oYour atoms are suddenly aware of quantum tunneling. (Ghost in the shell mod added)");
 
 							GamePacket p2 = packetEnd(appendFloat(appendString(createPacket(), "OnSetPos"), pData->x, pData->y));
-							memcpy(p2.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4);
+							memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 							ENetPacket * packet2 = enet_packet_create(p2.data,
 								p2.len,
 								ENET_PACKET_FLAG_RELIABLE);
@@ -3261,14 +3264,14 @@ label|Download Latest Version
 							packet::consolemessage(peer, "`oYour body stops shimmering and returns to normal. (Ghost in the shell mod removed)");
 
 							GamePacket p2 = packetEnd(appendFloat(appendString(createPacket(), "OnSetPos"), pData->x1, pData->y1));
-							memcpy(p2.data + 8, &(((PlayerInfo*)(peer->data))->netID), 4);
+							memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 							ENetPacket * packet2 = enet_packet_create(p2.data,
 								p2.len,
 								ENET_PACKET_FLAG_RELIABLE);
 
 							enet_peer_send(peer, 0, packet2);
 							delete p2.data;
-							((PlayerInfo*)(peer->data))->isInvisible = false;
+							(playerInfo(peer))->isInvisible = false;
 							sendState(peer);
 							sendClothes(peer);
 							pData->isGhost = false;
@@ -3277,17 +3280,17 @@ label|Download Latest Version
 					
 					else if (str.substr(0, 4) == "/sb ") {
 						using namespace std::chrono;
-						if (((PlayerInfo*)(peer->data))->lastSB + 45000 < (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count())
+						if ((playerInfo(peer))->lastSB + 45000 < (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count())
 						{
-							((PlayerInfo*)(peer->data))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
+							(playerInfo(peer))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
 						}
 						else {
 							packet::consolemessage(peer, "Wait a minute before using the SB command again!");
 							continue;
 						}
 
-						string name = ((PlayerInfo*)(peer->data))->displayName;
-						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "CP:0_PL:4_OID:_CT:[SB]_ `w** `5Super-Broadcast`` from `$`2" + name + "```` (in `$" + ((PlayerInfo*)(peer->data))->currentWorld + "``) ** :`` `# " + str.substr(4, cch.length() - 4 - 1)));
+						string name = (playerInfo(peer))->displayName;
+						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "CP:0_PL:4_OID:_CT:[SB]_ `w** `5Super-Broadcast`` from `$`2" + name + "```` (in `$" + (playerInfo(peer))->currentWorld + "``) ** :`` `# " + str.substr(4, cch.length() - 4 - 1)));
 						string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
 						BYTE* data = new BYTE[5 + text.length()];
 						BYTE zero = 0;
@@ -3303,7 +3306,7 @@ label|Download Latest Version
 						{
 							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 								continue;
-							if (!((PlayerInfo*)(currentPeer->data))->radio)
+							if (!(playerInfo(currentPeer))->radio)
 								continue;
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
@@ -3327,16 +3330,16 @@ label|Download Latest Version
 					}
 					else if (str.substr(0, 5) == "/jsb ") {
 						using namespace std::chrono;
-						if (((PlayerInfo*)(peer->data))->lastSB + 45000 < (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count())
+						if ((playerInfo(peer))->lastSB + 45000 < (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count())
 						{
-							((PlayerInfo*)(peer->data))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
+							(playerInfo(peer))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
 						}
 						else {
 							packet::consolemessage(peer, "Wait a minute before using the JSB command again!");
 							continue;
 						}
 
-						string name = ((PlayerInfo*)(peer->data))->displayName;
+						string name = (playerInfo(peer))->displayName;
 						GamePacket p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "`w** `5Super-Broadcast`` from `$`2" + name + "```` (in `4JAMMED``) ** :`` `# " + str.substr(5, cch.length() - 5 - 1)));
 						string text = "action|play_sfx\nfile|audio/beep.wav\ndelayMS|0\n";
 						BYTE* data = new BYTE[5 + text.length()];
@@ -3353,7 +3356,7 @@ label|Download Latest Version
 						{
 							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 								continue;
-							if (!((PlayerInfo*)(currentPeer->data))->radio)
+							if (!(playerInfo(currentPeer))->radio)
 								continue;
 							ENetPacket * packet = enet_packet_create(p.data,
 								p.len,
@@ -3379,12 +3382,12 @@ label|Download Latest Version
 					
 					else if (str.substr(0, 6) == "/radio") {
 						GamePacket p;
-						if (((PlayerInfo*)(peer->data))->radio) {
+						if ((playerInfo(peer))->radio) {
 							p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You won't see broadcasts anymore."));
-							((PlayerInfo*)(peer->data))->radio = false;
+							(playerInfo(peer))->radio = false;
 						} else {
 							p = packetEnd(appendString(appendString(createPacket(), "OnConsoleMessage"), "You will now see broadcasts again."));
-							((PlayerInfo*)(peer->data))->radio = true;
+							(playerInfo(peer))->radio = true;
 						}
 
 						ENetPacket * packet = enet_packet_create(p.data,
@@ -3395,8 +3398,8 @@ label|Download Latest Version
 						delete p.data;
 					}
 					else if (str.substr(0, 6) == "/reset"){
-						if (!isSuperAdmin(((PlayerInfo*)(peer->data))->rawName, ((PlayerInfo*)(peer->data))->tankIDPass)) break;
-						cout << "Restart from " << ((PlayerInfo*)(peer->data))->displayName << endl;
+						if (!isSuperAdmin((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass)) break;
+						cout << "Restart from " << (playerInfo(peer))->displayName << endl;
 						GamePacket p = packetEnd(appendInt(appendString(appendString(appendString(appendString(createPacket(), "OnAddNotification"), "interface/science_button.rttex"), "Restarting soon!"), "audio/mp3/suspended.mp3"), 0));
 						ENetPacket * packet = enet_packet_create(p.data,
 							p.len,
@@ -3415,7 +3418,7 @@ label|Download Latest Version
 
 					else if (str == "/unmod")
 					{
-						((PlayerInfo*)(peer->data))->canWalkInBlocks = false;
+						(playerInfo(peer))->canWalkInBlocks = false;
 						sendState(peer);
 					}
 					else if (str == "/alt") {
@@ -3430,7 +3433,7 @@ label|Download Latest Version
 					else
 					if (str == "/inventory")
 					{
-						sendInventory(peer, ((PlayerInfo*)(peer->data))->inventory);
+						sendInventory(peer, (playerInfo(peer))->inventory);
 					} else
 					if (str.substr(0,6) == "/item ")
 					{
@@ -3461,14 +3464,14 @@ label|Download Latest Version
 						data.punchY = 0;
 						data.XSpeed = 0;
 						data.YSpeed = 0;
-						data.netID = ((PlayerInfo*)(peer->data))->netID;
+						data.netID = (playerInfo(peer))->netID;
 						data.plantingTree = 0;
 						SendPacketRaw(4, packPlayerMoving(&data), 56, 0, peer, ENET_PACKET_FLAG_RELIABLE);
 
 					} else 
 					if (str.substr(0, 7) == "/color ")
 					{
-						((PlayerInfo*)(peer->data))->skinColor = atoi(str.substr(6, cch.length() - 6 - 1).c_str());
+						(playerInfo(peer))->skinColor = atoi(str.substr(6, cch.length() - 6 - 1).c_str());
 						sendClothes(peer);
 					}
 					if (str.substr(0, 4) == "/who")
@@ -3478,20 +3481,20 @@ label|Download Latest Version
 					}
 					if (str.length() && str[0] == '/')
 					{
-						sendAction(peer, ((PlayerInfo*)(peer->data))->netID, str);
+						sendAction(peer, (playerInfo(peer))->netID, str);
 					} else if (str.length()>0)
 					{
-						if (((PlayerInfo*)(peer->data))->taped == false) {
-							sendChatMessage(peer, ((PlayerInfo*)(peer->data))->netID, str);
+						if ((playerInfo(peer))->taped == false) {
+							sendChatMessage(peer, (playerInfo(peer))->netID, str);
 						}
 						else {
 							// Is duct-taped
-							sendChatMessage(peer, ((PlayerInfo*)(peer->data))->netID, randomDuctTapeMessage(str.length()));
+							sendChatMessage(peer, (playerInfo(peer))->netID, randomDuctTapeMessage(str.length()));
 						}
 					}
 					
 			}
-				if (!((PlayerInfo*)(event.peer->data))->isIn)
+				if (!(playerInfo(event.peer))->isIn)
 				{
 					if (itemdathash == 0) {
 						enet_peer_disconnect_later(peer, 0);
@@ -3512,35 +3515,35 @@ label|Download Latest Version
 						string act = to.substr(to.find("|") + 1, to.length() - to.find("|") - 1);
 						if (id == "tankIDName")
 						{
-							((PlayerInfo*)(event.peer->data))->tankIDName = act;
-							((PlayerInfo*)(event.peer->data))->haveGrowId = true;
+							(playerInfo(event.peer))->tankIDName = act;
+							(playerInfo(event.peer))->haveGrowId = true;
 						}
 						else if(id == "tankIDPass")
 						{
-							((PlayerInfo*)(event.peer->data))->tankIDPass = act;
+							(playerInfo(event.peer))->tankIDPass = act;
 						}
 						else if(id == "requestedName")
 						{
-							((PlayerInfo*)(event.peer->data))->requestedName = act;
+							(playerInfo(event.peer))->requestedName = act;
 						}
 						else if (id == "country")
 						{
-							((PlayerInfo*)(event.peer->data))->country = act;
+							(playerInfo(event.peer))->country = act;
 						}
 					}
-					if (!((PlayerInfo*)(event.peer->data))->haveGrowId)
+					if (!(playerInfo(event.peer))->haveGrowId)
 					{
-						((PlayerInfo*)(event.peer->data))->hasLogon = true;
-						((PlayerInfo*)(event.peer->data))->rawName = "";
-						((PlayerInfo*)(event.peer->data))->displayName = "Fake " + PlayerDB::fixColors(((PlayerInfo*)(event.peer->data))->requestedName.substr(0, ((PlayerInfo*)(event.peer->data))->requestedName.length()>15?15:((PlayerInfo*)(event.peer->data))->requestedName.length()));
+						(playerInfo(event.peer))->hasLogon = true;
+						(playerInfo(event.peer))->rawName = "";
+						(playerInfo(event.peer))->displayName = "Fake " + PlayerDB::fixColors((playerInfo(event.peer))->requestedName.substr(0, (playerInfo(event.peer))->requestedName.length()>15?15:(playerInfo(event.peer))->requestedName.length()));
 					}
 					else {
-						((PlayerInfo*)(event.peer->data))->rawName = PlayerDB::getProperName(((PlayerInfo*)(event.peer->data))->tankIDName);
+						(playerInfo(event.peer))->rawName = PlayerDB::getProperName((playerInfo(event.peer))->tankIDName);
 #ifdef REGISTRATION
-						int logStatus = PlayerDB::playerLogin(peer, ((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass);
+						int logStatus = PlayerDB::playerLogin(peer, (playerInfo(event.peer))->rawName, (playerInfo(event.peer))->tankIDPass);
 						if (logStatus == 1) {
 							packet::consolemessage(peer, "`rYou have successfully logged into your account!``");
-							((PlayerInfo*)(event.peer->data))->displayName = ((PlayerInfo*)(event.peer->data))->tankIDName;
+							(playerInfo(event.peer))->displayName = (playerInfo(event.peer))->tankIDName;
 						}
 						else {
 							packet::consolemessage(peer, "`rWrong username or password!``");
@@ -3548,22 +3551,22 @@ label|Download Latest Version
 						}
 #else
 						
-						((PlayerInfo*)(event.peer->data))->displayName = PlayerDB::fixColors(((PlayerInfo*)(event.peer->data))->tankIDName.substr(0, ((PlayerInfo*)(event.peer->data))->tankIDName.length()>18 ? 18 : ((PlayerInfo*)(event.peer->data))->tankIDName.length()));
-						if (((PlayerInfo*)(event.peer->data))->displayName.length() < 3) ((PlayerInfo*)(event.peer->data))->displayName = "Person that doesn't know how the name looks!";
+						(playerInfo(event.peer))->displayName = PlayerDB::fixColors((playerInfo(event.peer))->tankIDName.substr(0, (playerInfo(event.peer))->tankIDName.length()>18 ? 18 : (playerInfo(event.peer))->tankIDName.length()));
+						if ((playerInfo(event.peer))->displayName.length() < 3) (playerInfo(event.peer))->displayName = "Person that doesn't know how the name looks!";
 #endif
 					}
-					for (char c : ((PlayerInfo*)(event.peer->data))->displayName) if (c < 0x20 || c>0x7A) ((PlayerInfo*)(event.peer->data))->displayName = "Bad characters in name, remove them!";
+					for (char c : (playerInfo(event.peer))->displayName) if (c < 0x20 || c>0x7A) (playerInfo(event.peer))->displayName = "Bad characters in name, remove them!";
 					
-					if (((PlayerInfo*)(event.peer->data))->country.length() > 4)
+					if ((playerInfo(event.peer))->country.length() > 4)
 					{
-						((PlayerInfo*)(event.peer->data))->country = "us";
+						(playerInfo(event.peer))->country = "us";
 					}
-					if (getAdminLevel(((PlayerInfo*)(event.peer->data))->rawName, ((PlayerInfo*)(event.peer->data))->tankIDPass) > 0)
+					if (getAdminLevel((playerInfo(event.peer))->rawName, (playerInfo(event.peer))->tankIDPass) > 0)
 					{
-						((PlayerInfo*)(event.peer->data))->country = "../cash_icon_overlay";
+						(playerInfo(event.peer))->country = "../cash_icon_overlay";
 					}
 
-					GamePacket p2 = packetEnd(appendString(appendString(appendInt(appendString(createPacket(), "SetHasGrowID"), ((PlayerInfo*)(event.peer->data))->haveGrowId), ((PlayerInfo*)(peer->data))->tankIDName), ((PlayerInfo*)(peer->data))->tankIDPass));
+					GamePacket p2 = packetEnd(appendString(appendString(appendInt(appendString(createPacket(), "SetHasGrowID"), (playerInfo(event.peer))->haveGrowId), (playerInfo(peer))->tankIDName), (playerInfo(peer))->tankIDPass));
 					ENetPacket * packet2 = enet_packet_create(p2.data,
 						p2.len,
 						ENET_PACKET_FLAG_RELIABLE);
@@ -3573,13 +3576,13 @@ label|Download Latest Version
 					
 				}
 				string pStr = GetTextPointerFromPacket(event.packet);
-				if(pStr.substr(0, 17) == "action|enter_game" && !((PlayerInfo*)(event.peer->data))->isIn)
+				if(pStr.substr(0, 17) == "action|enter_game" && !(playerInfo(event.peer))->isIn)
 				{
 #ifdef TOTAL_LOG
 					cout << "And we are in!" << endl;
 #endif
 					ENetPeer* currentPeer;
-					((PlayerInfo*)(event.peer->data))->isIn = true;
+					(playerInfo(event.peer))->isIn = true;
 					sendWorldOffers(peer);
 					
 					// growmoji
@@ -3600,7 +3603,7 @@ label|Download Latest Version
 						it.itemCount = 200;
 						inventory.items.push_back(it);
 					}
-					((PlayerInfo*)(event.peer->data))->inventory = inventory;
+					(playerInfo(event.peer))->inventory = inventory;
 
 					{
 						packet::dialog(peer, newslist);
@@ -3613,7 +3616,7 @@ label|Download Latest Version
 							itemsDatSize + 60,
 							ENET_PACKET_FLAG_RELIABLE);
 						enet_peer_send(peer, 0, packet);
-						((PlayerInfo*)(peer->data))->isUpdating = true;
+						(playerInfo(peer))->isUpdating = true;
 
 					}
 				}
@@ -3636,11 +3639,11 @@ label|Download Latest Version
 #ifdef TOTAL_LOG
 						cout << "Entering some world..." << endl;
 #endif
-						if (!((PlayerInfo*)(peer->data))->hasLogon) break;
+						if (!(playerInfo(peer))->hasLogon) break;
 						try {
 							if (act.length() > 30) {
 								packet::consolemessage(peer, "`4Sorry, but world names with more than 30 characters are not allowed!");
-								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+								(playerInfo(peer))->currentWorld = "EXIT";
 								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
@@ -3661,22 +3664,22 @@ label|Download Latest Version
 										y = (j / info.width) * 32;
 									}
 								}
-								packet::onspawn(peer, "spawn|avatar\nnetID|" + std::to_string(cId) + "\nuserID|" + std::to_string(cId) + "\ncolrect|0|0|20|30\nposXY|" + std::to_string(x) + "|" + std::to_string(y) + "\nname|``" + ((PlayerInfo*)(event.peer->data))->displayName + "``\ncountry|" + ((PlayerInfo*)(event.peer->data))->country + "\ninvis|0\nmstate|0\nsmstate|0\ntype|local\n");
-								((PlayerInfo*)(event.peer->data))->netID = cId;
+								packet::onspawn(peer, "spawn|avatar\nnetID|" + std::to_string(cId) + "\nuserID|" + std::to_string(cId) + "\ncolrect|0|0|20|30\nposXY|" + std::to_string(x) + "|" + std::to_string(y) + "\nname|``" + (playerInfo(event.peer))->displayName + "``\ncountry|" + (playerInfo(event.peer))->country + "\ninvis|0\nmstate|0\nsmstate|0\ntype|local\n");
+								(playerInfo(event.peer))->netID = cId;
 								onPeerConnect(peer);
 								cId++;
 
-								sendInventory(peer, ((PlayerInfo*)(event.peer->data))->inventory);
+								sendInventory(peer, (playerInfo(event.peer))->inventory);
 
-                                                                if (((PlayerInfo*)(peer->data))->taped) {
-                                                                ((PlayerInfo*)(peer->data))->isDuctaped = true;
+                                                                if ((playerInfo(peer))->taped) {
+                                                                (playerInfo(peer))->isDuctaped = true;
                                                                 sendState(peer);
                                                                 }
 							}
 						}
 						catch (int e) {
 							if (e == 1) {
-								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+								(playerInfo(peer))->currentWorld = "EXIT";
 								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
@@ -3686,7 +3689,7 @@ label|Download Latest Version
 								packet::consolemessage(peer, "You have exited the world.");
 							}
 							else if (e == 2) {
-								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+								(playerInfo(peer))->currentWorld = "EXIT";
 								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
@@ -3696,7 +3699,7 @@ label|Download Latest Version
 								packet::consolemessage(peer, "You have entered bad characters in the world name!");
 							}
 							else if (e == 3) {
-								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+								(playerInfo(peer))->currentWorld = "EXIT";
 								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
@@ -3706,7 +3709,7 @@ label|Download Latest Version
 								packet::consolemessage(peer, "Exit from what? Click back if you're done playing.");
 							}
 							else {
-								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+								(playerInfo(peer))->currentWorld = "EXIT";
 								GamePacket p2 = packetEnd(appendIntx(appendString(createPacket(), "OnFailedToEnterWorld"), 1));
 								ENetPacket* packet2 = enet_packet_create(p2.data,
 									p2.len,
@@ -3726,8 +3729,8 @@ label|Download Latest Version
 							}
 							if (act == "quit_to_exit")
 							{
-								sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
-								((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+								sendPlayerLeave(peer, playerInfo(event.peer));
+								(playerInfo(peer))->currentWorld = "EXIT";
 								sendWorldOffers(peer);
 
 							}
@@ -3747,10 +3750,10 @@ label|Download Latest Version
 					if (tankUpdatePacket)
 					{
 						PlayerMoving* pMov = unpackPlayerMoving(tankUpdatePacket);
-						if (((PlayerInfo*)(event.peer->data))->isGhost) {
-							((PlayerInfo*)(event.peer->data))->isInvisible = true;
-							((PlayerInfo*)(event.peer->data))->x1 = pMov->x;
-							((PlayerInfo*)(event.peer->data))->y1 = pMov->y;
+						if ((playerInfo(event.peer))->isGhost) {
+							(playerInfo(event.peer))->isInvisible = true;
+							(playerInfo(event.peer))->x1 = pMov->x;
+							(playerInfo(event.peer))->y1 = pMov->y;
 							pMov->x = -1000000;
 							pMov->y = -1000000;
 						}
@@ -3758,13 +3761,13 @@ label|Download Latest Version
 						switch (pMov->packetType)
 						{
 						case 0:
-							((PlayerInfo*)(event.peer->data))->x = pMov->x;
-							((PlayerInfo*)(event.peer->data))->y = pMov->y;
-							((PlayerInfo*)(event.peer->data))->isRotatedLeft = pMov->characterState & 0x10;
+							(playerInfo(event.peer))->x = pMov->x;
+							(playerInfo(event.peer))->y = pMov->y;
+							(playerInfo(event.peer))->isRotatedLeft = pMov->characterState & 0x10;
 							sendPData(peer, pMov);
-							if (!((PlayerInfo*)(peer->data))->joinClothesUpdated)
+							if (!(playerInfo(peer))->joinClothesUpdated)
 							{
-								((PlayerInfo*)(peer->data))->joinClothesUpdated = true;
+								(playerInfo(peer))->joinClothesUpdated = true;
 								updateAllClothes(peer);
 							}
 							break;
@@ -3781,8 +3784,8 @@ label|Download Latest Version
 						{
 							if(data2->punchX < world->width && data2->punchY < world->height)
 							if (getItemDef(world->items[data2->punchX + (data2->punchY * world->width)].foreground).blockType == BlockTypes::MAIN_DOOR) {
-									sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
-									((PlayerInfo*)(peer->data))->currentWorld = "EXIT";
+									sendPlayerLeave(peer, playerInfo(event.peer));
+									(playerInfo(peer))->currentWorld = "EXIT";
 									sendWorldOffers(peer);
 
 								}
@@ -3800,93 +3803,93 @@ label|Download Latest Version
 							
 							switch (def.clothType) {
 							case 0:
-								if (((PlayerInfo*)(event.peer->data))->cloth0 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth0 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth0 = 0;
+									(playerInfo(event.peer))->cloth0 = 0;
 									break;
 								}
-								((PlayerInfo*)(event.peer->data))->cloth0 = pMov->plantingTree;
+								(playerInfo(event.peer))->cloth0 = pMov->plantingTree;
 								break;
 							case 1:
-								if (((PlayerInfo*)(event.peer->data))->cloth1 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth1 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth1 = 0;
+									(playerInfo(event.peer))->cloth1 = 0;
 									break;
 								}
-								((PlayerInfo*)(event.peer->data))->cloth1 = pMov->plantingTree;
+								(playerInfo(event.peer))->cloth1 = pMov->plantingTree;
 								break;
 							case 2:
-								if (((PlayerInfo*)(event.peer->data))->cloth2 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth2 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth2 = 0;
+									(playerInfo(event.peer))->cloth2 = 0;
 									break;
 								}
-								((PlayerInfo*)(event.peer->data))->cloth2 = pMov->plantingTree;
+								(playerInfo(event.peer))->cloth2 = pMov->plantingTree;
 								break;
 							case 3:
-								if (((PlayerInfo*)(event.peer->data))->cloth3 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth3 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth3 = 0;
+									(playerInfo(event.peer))->cloth3 = 0;
 									break;
 								}
-								((PlayerInfo*)(event.peer->data))->cloth3 = pMov->plantingTree;
+								(playerInfo(event.peer))->cloth3 = pMov->plantingTree;
 								break;
 							case 4:
-								if (((PlayerInfo*)(event.peer->data))->cloth4 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth4 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth4 = 0;
+									(playerInfo(event.peer))->cloth4 = 0;
 									break;
 								}
-								((PlayerInfo*)(event.peer->data))->cloth4 = pMov->plantingTree;
+								(playerInfo(event.peer))->cloth4 = pMov->plantingTree;
 								break;
 							case 5:
-								if (((PlayerInfo*)(event.peer->data))->cloth5 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth5 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth5 = 0;
+									(playerInfo(event.peer))->cloth5 = 0;
 									break;
 								}
-								((PlayerInfo*)(event.peer->data))->cloth5 = pMov->plantingTree;
+								(playerInfo(event.peer))->cloth5 = pMov->plantingTree;
 								break;
 							case 6:
-								if (((PlayerInfo*)(event.peer->data))->cloth6 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth6 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth6 = 0;
-									((PlayerInfo*)(event.peer->data))->canDoubleJump = false;
+									(playerInfo(event.peer))->cloth6 = 0;
+									(playerInfo(event.peer))->canDoubleJump = false;
 									sendState(peer);
 									break;
 								}
 								{
-									((PlayerInfo*)(event.peer->data))->cloth6 = pMov->plantingTree;
+									(playerInfo(event.peer))->cloth6 = pMov->plantingTree;
 									int item = pMov->plantingTree;
 									if (item == 156 || item == 362 || item == 678 || item == 736 || item == 818 || item == 1206 || item == 1460 || item == 1550 || item == 1574 || item == 1668 || item == 1672 || item == 1674 || item == 1784 || item == 1824 || item == 1936 || item == 1938 || item == 1970 || item == 2254 || item == 2256 || item == 2258 || item == 2260 || item == 2262 || item == 2264 || item == 2390 || item == 2392 || item == 3120 || item == 3308 || item == 3512 || item == 4534 || item == 4986 || item == 5754 || item == 6144 || item == 6334 || item == 6694 || item == 6818 || item == 6842 || item == 1934 || item == 3134 || item == 6004 || item == 1780 || item == 2158 || item == 2160 || item == 2162 || item == 2164 || item == 2166 || item == 2168 || item == 2438 || item == 2538 || item == 2778 || item == 3858 || item == 350 || item == 998 || item == 1738 || item == 2642 || item == 2982 || item == 3104 || item == 3144 || item == 5738 || item == 3112 || item == 2722 || item == 3114 || item == 4970 || item == 4972 || item == 5020 || item == 6284 || item == 4184 || item == 4628 || item == 5322 || item == 4112 || item == 4114 || item == 3442) {
-										((PlayerInfo*)(event.peer->data))->canDoubleJump = true;
+										(playerInfo(event.peer))->canDoubleJump = true;
 									}
 									else {
-										((PlayerInfo*)(event.peer->data))->canDoubleJump = false;
+										(playerInfo(event.peer))->canDoubleJump = false;
 									}
 									// ^^^^ wings
 									sendState(peer);
 								}
 								break;
 							case 7:
-								if (((PlayerInfo*)(event.peer->data))->cloth7 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth7 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth7 = 0;
+									(playerInfo(event.peer))->cloth7 = 0;
 									break;
 								}
-								((PlayerInfo*)(event.peer->data))->cloth7 = pMov->plantingTree;
+								(playerInfo(event.peer))->cloth7 = pMov->plantingTree;
 								break;
 							case 8:
-								if (((PlayerInfo*)(event.peer->data))->cloth8 == pMov->plantingTree)
+								if ((playerInfo(event.peer))->cloth8 == pMov->plantingTree)
 								{
-									((PlayerInfo*)(event.peer->data))->cloth8 = 0;
+									(playerInfo(event.peer))->cloth8 = 0;
 									break;
 								}
-								((PlayerInfo*)(event.peer->data))->cloth8 = pMov->plantingTree;
+								(playerInfo(event.peer))->cloth8 = pMov->plantingTree;
 								break;
 							default:
 #ifdef TOTAL_LOG
-								cout << "Invalid item activated: " << pMov->plantingTree << " by " << ((PlayerInfo*)(event.peer->data))->displayName << endl;
+								cout << "Invalid item activated: " << pMov->plantingTree << " by " << (playerInfo(event.peer))->displayName << endl;
 #endif
 								break;
 							}
@@ -3902,7 +3905,7 @@ label|Download Latest Version
 						if (data2->punchX != -1 && data2->punchY != -1) {
 							if (data2->packetType == 3)
 							{
-								sendTileUpdate(data2->punchX, data2->punchY, data2->plantingTree, ((PlayerInfo*)(event.peer->data))->netID, peer);
+								sendTileUpdate(data2->punchX, data2->punchY, data2->plantingTree, (playerInfo(event.peer))->netID, peer);
 							}
 							else {
 
@@ -3933,8 +3936,8 @@ label|Download Latest Version
 			printf("Peer disconnected.\n");
 #endif
 			/* Reset the peer's client information. */
-			sendPlayerLeave(peer, (PlayerInfo*)(event.peer->data));
-			((PlayerInfo*)(event.peer->data))->inventory.items.clear();
+			sendPlayerLeave(peer, playerInfo(event.peer));
+			(playerInfo(event.peer))->inventory.items.clear();
 			delete (PlayerInfo*)event.peer->data;
 			event.peer->data = NULL;
 		}
