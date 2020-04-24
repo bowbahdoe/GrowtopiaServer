@@ -793,7 +793,7 @@ WorldDB::WorldDB() {
 }
 
 namespace packet {
-	void consolemessage(ENetPeer* peer, string message) {
+	void consoleMessage(ENetPeer* peer, string message) {
 
 		GamePacketBuilder()
 			.appendString("OnConsoleMessage")
@@ -808,14 +808,14 @@ namespace packet {
 			.build()
 			.send(peer);
 	}
-	void onspawn(ENetPeer* peer, string message) {
+	void onSpawn(ENetPeer* peer, string message) {
 		GamePacketBuilder()
 			.appendString("OnSpawn")
 			.appendString(message)
 			.build()
 			.send(peer);
 	}
-	void requestworldselectmenu(ENetPeer* peer, string message) {
+	void requestWorldSelectMenu(ENetPeer* peer, string message) {
 		GamePacketBuilder()
 			.appendString("OnRequestWorldSelectMenu")
 			.appendString(message)
@@ -823,7 +823,7 @@ namespace packet {
 			.send(peer);
 	}
 
-	void storerequest(ENetPeer* peer, string message) {
+	void storeRequest(ENetPeer* peer, string message) {
 		GamePacketBuilder()
 			.appendString("OnStoreRequest")
 			.appendString(message)
@@ -840,13 +840,9 @@ string getStrUpper(string txt) {
 
 AWorld WorldDB::get2(string name) {
 	if (worlds.size() > 200) {
-#ifdef TOTAL_LOG
 		cout << "Saving redundant worlds!" << endl;
-#endif
 		saveRedundant();
-#ifdef TOTAL_LOG
 		cout << "Redundant worlds are saved!" << endl;
-#endif
 	}
 	AWorld ret;
 	name = getStrUpper(name);
@@ -1745,9 +1741,9 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 				if (isHere(peer, currentPeer))
 				{
 					string netIdS = std::to_string((playerInfo(currentPeer))->netID);
-					packet::onspawn(peer, "spawn|avatar\nnetID|" + netIdS + "\nuserID|" + netIdS + "\ncolrect|0|0|20|30\nposXY|" + std::to_string((playerInfo(currentPeer))->x) + "|" + std::to_string((playerInfo(currentPeer))->y) + "\nname|``" + (playerInfo(currentPeer))->displayName + "``\ncountry|" + (playerInfo(currentPeer))->country + "\ninvis|0\nmstate|0\nsmstate|0\n"); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
+					packet::onSpawn(peer, "spawn|avatar\nnetID|" + netIdS + "\nuserID|" + netIdS + "\ncolrect|0|0|20|30\nposXY|" + std::to_string((playerInfo(currentPeer))->x) + "|" + std::to_string((playerInfo(currentPeer))->y) + "\nname|``" + (playerInfo(currentPeer))->displayName + "``\ncountry|" + (playerInfo(currentPeer))->country + "\ninvis|0\nmstate|0\nsmstate|0\n"); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
 					string netIdS2 = std::to_string((playerInfo(peer))->netID);
-					packet::onspawn(currentPeer, "spawn|avatar\nnetID|" + netIdS2 + "\nuserID|" + netIdS2 + "\ncolrect|0|0|20|30\nposXY|" + std::to_string((playerInfo(peer))->x) + "|" + std::to_string((playerInfo(peer))->y) + "\nname|``" + (playerInfo(peer))->displayName + "``\ncountry|" + (playerInfo(peer))->country + "\ninvis|0\nmstate|0\nsmstate|0\n"); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
+					packet::onSpawn(currentPeer, "spawn|avatar\nnetID|" + netIdS2 + "\nuserID|" + netIdS2 + "\ncolrect|0|0|20|30\nposXY|" + std::to_string((playerInfo(peer))->x) + "|" + std::to_string((playerInfo(peer))->y) + "\nname|``" + (playerInfo(peer))->displayName + "``\ncountry|" + (playerInfo(peer))->country + "\ninvis|0\nmstate|0\nsmstate|0\n"); // ((PlayerInfo*)(server->peers[i].data))->tankIDName
 				}
 			}
 		}
@@ -2099,7 +2095,7 @@ void loadnews() {
 						if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 							continue;
 						if (isHere(peer, currentPeer)) {
-							packet::consolemessage(peer, "`3[`w" + world->name + " `ohas been World Locked by `2" + (playerInfo(peer))->displayName + "`3]");
+							packet::consoleMessage(peer, "`3[`w" + world->name + " `ohas been World Locked by `2" + (playerInfo(peer))->displayName + "`3]");
 						}
 					}
 				}
@@ -2383,7 +2379,7 @@ void loadnews() {
 		}
 		(playerInfo(peer))->currentWorld = worldInfo->name;
 		if (worldInfo->owner != "") {
-			packet::consolemessage(peer, "`#[`0" + worldInfo->name + " `9World Locked by " + worldInfo->owner + "`#]");
+			packet::consoleMessage(peer, "`#[`0" + worldInfo->name + " `9World Locked by " + worldInfo->owner + "`#]");
 		}
 		delete[] data;
 
@@ -2495,7 +2491,7 @@ void loadnews() {
 		}
 		//GamePacket p3 = packetEnd(appendString(appendString(createPacket(), "OnRequestWorldSelectMenu"), "default|GO FOR IT\nadd_button|Showing: `wFake Worlds``|_catselect_|0.6|3529161471|\nadd_floater|Subscribe|5|0.55|3529161471\nadd_floater|Growtopia|4|0.52|4278190335\nadd_floater|Noobs|150|0.49|3529161471\nadd_floater|...|3|0.49|3529161471\nadd_floater|`6:O :O :O``|2|0.46|3529161471\nadd_floater|SEEMS TO WORK|2|0.46|3529161471\nadd_floater|?????|1|0.43|3529161471\nadd_floater|KEKEKEKEK|13|0.7|3417414143\n"));
 		//for (int i = 0; i < p.len; i++) cout << (int)*(p.data + i) << " ";
-		packet::requestworldselectmenu(peer, worldOffers);
+		packet::requestWorldSelectMenu(peer, worldOffers);
 	}
 
 
@@ -2625,7 +2621,7 @@ label|Download Latest Version
 			(playerInfo(peer))->charIP = clientConnection;
 			if (count > 3)
 			{
-				packet::consolemessage(peer, "`rToo many accounts are logged on from this IP. Log off one account before playing please.``");
+				packet::consoleMessage(peer, "`rToo many accounts are logged on from this IP. Log off one account before playing please.``");
 				enet_peer_disconnect_later(peer, 0);
 			}
 			else {
@@ -2805,7 +2801,7 @@ label|Download Latest Version
 				}
 				if (cch.find("action|store") == 0)
 				{
-					packet::storerequest(peer, "set_description_text|Welcome to the `2Growtopia Store``!  Tap the item you'd like more info on.`o  `wWant to get `5Supporter`` status? Any Gem purchase (or `57,000`` Gems earned with free `5Tapjoy`` offers) will make you one. You'll get new skin colors, the `5Recycle`` tool to convert unwanted items into Gems, and more bonuses!\nadd_button|iap_menu|Buy Gems|interface/large/store_buttons5.rttex||0|2|0|0||\nadd_button|subs_menu|Subscriptions|interface/large/store_buttons22.rttex||0|1|0|0||\nadd_button|token_menu|Growtoken Items|interface/large/store_buttons9.rttex||0|0|0|0||\nadd_button|pristine_forceps|`oAnomalizing Pristine Bonesaw``|interface/large/store_buttons20.rttex|Built to exacting specifications by GrowTech engineers to find and remove temporal anomalies from infected patients, and with even more power than Delicate versions! Note : The fragile anomaly - seeking circuitry in these devices is prone to failure and may break (though with less of a chance than a Delicate version)! Use with care!|0|3|3500|0||\nadd_button|itemomonth|`oItem Of The Month``|interface/large/store_buttons16.rttex|`2September 2018:`` `9Sorcerer's Tunic of Mystery!`` Capable of reflecting the true colors of the world around it, this rare tunic is made of captured starlight and aether. If you think knitting with thread is hard, just try doing it with moonbeams and magic! The result is worth it though, as these clothes won't just make you look amazing - you'll be able to channel their inherent power into blasts of cosmic energy!``|0|3|200000|0||\nadd_button|contact_lenses|`oContact Lens Pack``|interface/large/store_buttons22.rttex|Need a colorful new look? This pack includes 10 random Contact Lens colors (and may include Contact Lens Cleaning Solution, to return to your natural eye color)!|0|7|15000|0||\nadd_button|locks_menu|Locks And Stuff|interface/large/store_buttons3.rttex||0|4|0|0||\nadd_button|itempack_menu|Item Packs|interface/large/store_buttons3.rttex||0|3|0|0||\nadd_button|bigitems_menu|Awesome Items|interface/large/store_buttons4.rttex||0|6|0|0||\nadd_button|weather_menu|Weather Machines|interface/large/store_buttons5.rttex|Tired of the same sunny sky?  We offer alternatives within...|0|4|0|0||\n");
+					packet::storeRequest(peer, "set_description_text|Welcome to the `2Growtopia Store``!  Tap the item you'd like more info on.`o  `wWant to get `5Supporter`` status? Any Gem purchase (or `57,000`` Gems earned with free `5Tapjoy`` offers) will make you one. You'll get new skin colors, the `5Recycle`` tool to convert unwanted items into Gems, and more bonuses!\nadd_button|iap_menu|Buy Gems|interface/large/store_buttons5.rttex||0|2|0|0||\nadd_button|subs_menu|Subscriptions|interface/large/store_buttons22.rttex||0|1|0|0||\nadd_button|token_menu|Growtoken Items|interface/large/store_buttons9.rttex||0|0|0|0||\nadd_button|pristine_forceps|`oAnomalizing Pristine Bonesaw``|interface/large/store_buttons20.rttex|Built to exacting specifications by GrowTech engineers to find and remove temporal anomalies from infected patients, and with even more power than Delicate versions! Note : The fragile anomaly - seeking circuitry in these devices is prone to failure and may break (though with less of a chance than a Delicate version)! Use with care!|0|3|3500|0||\nadd_button|itemomonth|`oItem Of The Month``|interface/large/store_buttons16.rttex|`2September 2018:`` `9Sorcerer's Tunic of Mystery!`` Capable of reflecting the true colors of the world around it, this rare tunic is made of captured starlight and aether. If you think knitting with thread is hard, just try doing it with moonbeams and magic! The result is worth it though, as these clothes won't just make you look amazing - you'll be able to channel their inherent power into blasts of cosmic energy!``|0|3|200000|0||\nadd_button|contact_lenses|`oContact Lens Pack``|interface/large/store_buttons22.rttex|Need a colorful new look? This pack includes 10 random Contact Lens colors (and may include Contact Lens Cleaning Solution, to return to your natural eye color)!|0|7|15000|0||\nadd_button|locks_menu|Locks And Stuff|interface/large/store_buttons3.rttex||0|4|0|0||\nadd_button|itempack_menu|Item Packs|interface/large/store_buttons3.rttex||0|3|0|0||\nadd_button|bigitems_menu|Awesome Items|interface/large/store_buttons4.rttex||0|6|0|0||\nadd_button|weather_menu|Weather Machines|interface/large/store_buttons5.rttex|Tired of the same sunny sky?  We offer alternatives within...|0|4|0|0||\n");
 				}
 				if (cch.find("action|info") == 0)
 				{
@@ -2859,7 +2855,7 @@ label|Download Latest Version
 
 						int regState = PlayerDB::playerRegister(username, password, passwordverify, email, discord);
 						if (regState == 1) {
-							packet::consolemessage(peer, "`rYour account has been created!``");
+							packet::consoleMessage(peer, "`rYour account has been created!``");
 							GamePacketBuilder()
 								.appendString("SetHasGrowID")
 								.appendInt(1)
@@ -2870,19 +2866,19 @@ label|Download Latest Version
 							enet_peer_disconnect_later(peer, 0);
 						}
 						else if(regState==-1) {
-							packet::consolemessage(peer, "`rAccount creation has failed, because it already exists!``");
+							packet::consoleMessage(peer, "`rAccount creation has failed, because it already exists!``");
 						}
 						else if (regState == -2) {
-							packet::consolemessage(peer, "`rAccount creation has failed, because the name is too short!``");
+							packet::consoleMessage(peer, "`rAccount creation has failed, because the name is too short!``");
 						}
 						else if (regState == -3) {
-							packet::consolemessage(peer, "`4Passwords mismatch!``");
+							packet::consoleMessage(peer, "`4Passwords mismatch!``");
 						}
 						else if (regState == -4) {
-							packet::consolemessage(peer, "`4Account creation has failed, because email address is invalid!``");
+							packet::consoleMessage(peer, "`4Account creation has failed, because email address is invalid!``");
 						}
 						else if (regState == -5) {
-							packet::consolemessage(peer, "`4Account creation has failed, because Discord ID is invalid!``");
+							packet::consoleMessage(peer, "`4Account creation has failed, because Discord ID is invalid!``");
 						}
 					}
 #endif
@@ -2940,7 +2936,7 @@ label|Download Latest Version
 						(playerInfo(peer))->cloth_necklace = 0;
 						(playerInfo(peer))->skinColor = 2;
 						sendClothes(peer);
-						packet::consolemessage(peer, "`^Legendary Wizard Set Mod has been Enabled! ");
+						packet::consoleMessage(peer, "`^Legendary Wizard Set Mod has been Enabled! ");
 					}
 					else if (str.substr(0, 6) == "/find ")
 					{
@@ -2952,13 +2948,13 @@ label|Download Latest Version
 							def = getItemDef(o);
 							if (def.name == itemname)
 							{
-								packet::consolemessage(peer, "`rItem ID of " + def.name + ": " + std::to_string(def.id));
+								packet::consoleMessage(peer, "`rItem ID of " + def.name + ": " + std::to_string(def.id));
 								found = true;
 							}
 						}
 						if (found == false)
 						{
-							packet::consolemessage(peer, "`4Could not find the following item. Please use uppercase at the beggining, ( for example: Legendary Wings, not legendary wings ).");
+							packet::consoleMessage(peer, "`4Could not find the following item. Please use uppercase at the beggining, ( for example: Legendary Wings, not legendary wings ).");
 						}
 						found = false;
 					}
@@ -3008,7 +3004,7 @@ label|Download Latest Version
 										(playerInfo(currentPeer))->taped = false;
 										(playerInfo(currentPeer))->isDuctaped = false;
 										
-										packet::consolemessage(peer, "`2You are no longer duct-taped!");
+										packet::consoleMessage(peer, "`2You are no longer duct-taped!");
 										sendState(currentPeer);
 										{
 											GamePacketBuilder()
@@ -3055,7 +3051,7 @@ label|Download Latest Version
 						}
 					}
 					else if (str == "/help"){
-						packet::consolemessage(peer, "Supported commands are: /mods, /ducttape, /help, /mod, /unmod, /inventory, /item id, /team id, /color number, /who, /state number, /count, /sb message, /alt, /radio, /gem, /jsb, /find itemname, /unequip, /weather id, /nick nickname, /flag id, /wizard, /news, /loadnews");
+						packet::consoleMessage(peer, "Supported commands are: /mods, /ducttape, /help, /mod, /unmod, /inventory, /item id, /team id, /color number, /who, /state number, /count, /sb message, /alt, /radio, /gem, /jsb, /find itemname, /unequip, /weather id, /nick nickname, /flag id, /wizard, /news, /loadnews");
 					}
 					else if (str == "/news"){
 						packet::dialog(peer, newslist);
@@ -3138,7 +3134,7 @@ label|Download Latest Version
 												continue;
 											if (isHere(peer, currentPeer))
 											{
-												packet::consolemessage(peer, "`oPlayer `2" + (playerInfo(peer))->displayName + "`o has just changed the world's weather!");
+												packet::consoleMessage(peer, "`oPlayer `2" + (playerInfo(peer))->displayName + "`o has just changed the world's weather!");
 
 												GamePacketBuilder()
 													.appendString("OnSetCurrentWeather")
@@ -3164,7 +3160,7 @@ label|Download Latest Version
 								continue;
 							count++;
 						}
-						packet::consolemessage(peer, "There are "+std::to_string(count)+" people online out of 1024 limit.");
+						packet::consoleMessage(peer, "There are "+std::to_string(count)+" people online out of 1024 limit.");
 					}
 					else if (str.substr(0, 5) == "/asb "){
 						if (!canSB((playerInfo(peer))->rawName, (playerInfo(peer))->tankIDPass)) continue;
@@ -3187,10 +3183,10 @@ label|Download Latest Version
 						}
 					}
 					else if (str == "/invis") {
-						packet::consolemessage(peer, "`6" + str);
+						packet::consoleMessage(peer, "`6" + str);
 						if (!pData->isGhost) {
 
-							packet::consolemessage(peer, "`oYour atoms are suddenly aware of quantum tunneling. (Ghost in the shell mod added)");
+							packet::consoleMessage(peer, "`oYour atoms are suddenly aware of quantum tunneling. (Ghost in the shell mod added)");
 
 							GamePacket p2 = GamePacketBuilder()
 								.appendString("OnSetPos")
@@ -3204,7 +3200,7 @@ label|Download Latest Version
 							pData->isGhost = true;
 						}
 						else {
-							packet::consolemessage(peer, "`oYour body stops shimmering and returns to normal. (Ghost in the shell mod removed)");
+							packet::consoleMessage(peer, "`oYour body stops shimmering and returns to normal. (Ghost in the shell mod removed)");
 
 							GamePacket p2 = GamePacketBuilder()
 								.appendString("OnSetPos")
@@ -3227,7 +3223,7 @@ label|Download Latest Version
 							(playerInfo(peer))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
 						}
 						else {
-							packet::consolemessage(peer, "Wait a minute before using the SB command again!");
+							packet::consoleMessage(peer, "Wait a minute before using the SB command again!");
 							continue;
 						}
 
@@ -3273,7 +3269,7 @@ label|Download Latest Version
 							(playerInfo(peer))->lastSB = (duration_cast<milliseconds>(system_clock::now().time_since_epoch())).count();
 						}
 						else {
-							packet::consolemessage(peer, "Wait a minute before using the JSB command again!");
+							packet::consoleMessage(peer, "Wait a minute before using the JSB command again!");
 							continue;
 						}
 
@@ -3481,11 +3477,11 @@ label|Download Latest Version
 #ifdef REGISTRATION
 						int logStatus = PlayerDB::playerLogin(peer, (playerInfo(event.peer))->rawName, (playerInfo(event.peer))->tankIDPass);
 						if (logStatus == 1) {
-							packet::consolemessage(peer, "`rYou have successfully logged into your account!``");
+							packet::consoleMessage(peer, "`rYou have successfully logged into your account!``");
 							(playerInfo(event.peer))->displayName = (playerInfo(event.peer))->tankIDName;
 						}
 						else {
-							packet::consolemessage(peer, "`rWrong username or password!``");
+							packet::consoleMessage(peer, "`rWrong username or password!``");
 							enet_peer_disconnect_later(peer, 0);
 						}
 #else
@@ -3534,7 +3530,7 @@ label|Download Latest Version
 						.send(peer);
 					
 					
-					packet::consolemessage(peer, "Server made by Growtopia Noobs, some fixes by iProgramInCpp and items from Nenkai.");
+					packet::consoleMessage(peer, "Server made by Growtopia Noobs, some fixes by iProgramInCpp and items from Nenkai.");
 					PlayerInventory inventory;
 					for (int i = 0; i < 200; i++)
 					{
@@ -3582,7 +3578,7 @@ label|Download Latest Version
 						if (!(playerInfo(peer))->hasLogon) break;
 						try {
 							if (act.length() > 30) {
-								packet::consolemessage(peer, "`4Sorry, but world names with more than 30 characters are not allowed!");
+								packet::consoleMessage(peer, "`4Sorry, but world names with more than 30 characters are not allowed!");
 								(playerInfo(peer))->currentWorld = "EXIT";
 								GamePacketBuilder()
 									.appendString("OnFailedToEnterWorld")
@@ -3603,7 +3599,7 @@ label|Download Latest Version
 										y = (j / info.width) * 32;
 									}
 								}
-								packet::onspawn(peer, "spawn|avatar\nnetID|" + std::to_string(cId) + "\nuserID|" + std::to_string(cId) + "\ncolrect|0|0|20|30\nposXY|" + std::to_string(x) + "|" + std::to_string(y) + "\nname|``" + (playerInfo(event.peer))->displayName + "``\ncountry|" + (playerInfo(event.peer))->country + "\ninvis|0\nmstate|0\nsmstate|0\ntype|local\n");
+								packet::onSpawn(peer, "spawn|avatar\nnetID|" + std::to_string(cId) + "\nuserID|" + std::to_string(cId) + "\ncolrect|0|0|20|30\nposXY|" + std::to_string(x) + "|" + std::to_string(y) + "\nname|``" + (playerInfo(event.peer))->displayName + "``\ncountry|" + (playerInfo(event.peer))->country + "\ninvis|0\nmstate|0\nsmstate|0\ntype|local\n");
 								(playerInfo(event.peer))->netID = cId;
 								onPeerConnect(peer);
 								cId++;
@@ -3624,7 +3620,7 @@ label|Download Latest Version
 									.appendIntx(1)
 									.build()
 									.send(peer);
-								packet::consolemessage(peer, "You have exited the world.");
+								packet::consoleMessage(peer, "You have exited the world.");
 							}
 							else if (e == 2) {
 								(playerInfo(peer))->currentWorld = "EXIT";
@@ -3633,7 +3629,7 @@ label|Download Latest Version
 									.appendIntx(1)
 									.build()
 									.send(peer);
-								packet::consolemessage(peer, "You have entered bad characters in the world name!");
+								packet::consoleMessage(peer, "You have entered bad characters in the world name!");
 							}
 							else if (e == 3) {
 								(playerInfo(peer))->currentWorld = "EXIT";
@@ -3642,7 +3638,7 @@ label|Download Latest Version
 									.appendIntx(1)
 									.build()
 									.send(peer);
-								packet::consolemessage(peer, "Exit from what? Click back if you're done playing.");
+								packet::consoleMessage(peer, "Exit from what? Click back if you're done playing.");
 							}
 							else {
 								(playerInfo(peer))->currentWorld = "EXIT";
@@ -3651,7 +3647,7 @@ label|Download Latest Version
 									.appendIntx(1)
 									.build()
 									.send(peer);
-								packet::consolemessage(peer, "I know this menu is magical and all, but it has its limitations! You can't visit this world!");
+								packet::consoleMessage(peer, "I know this menu is magical and all, but it has its limitations! You can't visit this world!");
 							}
 						}
 					}
