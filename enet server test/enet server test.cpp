@@ -338,7 +338,7 @@ public:
 	};
 
 	~GamePacket() {
-		delete this->data;
+		delete[] this->data;
 	}
 };
 
@@ -350,7 +350,7 @@ public:
 	GamePacketBuilder& appendFloat(float val) {
 		BYTE* n = new BYTE[p.len + 2 + 4];
 		memcpy(n, p.data, p.len);
-		delete p.data;
+		delete[] p.data;
 		p.data = n;
 		n[p.len] = p.indexes;
 		n[p.len + 1] = 1;
@@ -364,7 +364,7 @@ public:
 	{
 		BYTE* n = new BYTE[p.len + 2 + 8];
 		memcpy(n, p.data, p.len);
-		delete p.data;
+		delete[] p.data;
 		p.data = n;
 		n[p.len] = p.indexes;
 		n[p.len + 1] = 3;
@@ -379,7 +379,7 @@ public:
 	{
 		BYTE* n = new BYTE[p.len + 2 + 12];
 		memcpy(n, p.data, p.len);
-		delete p.data;
+		delete[] p.data;
 		p.data = n;
 		n[p.len] = p.indexes;
 		n[p.len + 1] = 4;
@@ -395,7 +395,7 @@ public:
 	{
 		BYTE* n = new BYTE[p.len + 2 + 4];
 		memcpy(n, p.data, p.len);
-		delete p.data;
+		delete[] p.data;
 		p.data = n;
 		n[p.len] = p.indexes;
 		n[p.len + 1] = 9;
@@ -409,7 +409,7 @@ public:
 	{
 		BYTE* n = new BYTE[p.len + 2 + 4];
 		memcpy(n, p.data, p.len);
-		delete p.data;
+		delete[] p.data;
 		p.data = n;
 		n[p.len] = p.indexes;
 		n[p.len + 1] = 5;
@@ -423,7 +423,7 @@ public:
 	{
 		BYTE* n = new BYTE[p.len + 2 + str.length() + 4];
 		memcpy(n, p.data, p.len);
-		delete p.data;
+		delete[] p.data;
 		p.data = n;
 		n[p.len] = p.indexes;
 		n[p.len + 1] = 2;
@@ -438,7 +438,7 @@ public:
 	GamePacket&& build() {
 		BYTE* n = new BYTE[p.len + 1];
 		memcpy(n, p.data, p.len);
-		delete p.data;
+		delete[] p.data;
 		p.data = n;
 		char zero = 0;
 		memcpy(p.data + p.len, &zero, 1);
@@ -1668,7 +1668,7 @@ void sendInventory(ENetPeer* peer, PlayerInventory inventory)
 		packetLen,
 		ENET_PACKET_FLAG_RELIABLE);
 	enet_peer_send(peer, 0, packet3);
-	delete data2;
+	delete[] data2;
 	//enet_host_flush(server);
 }
 
@@ -1834,16 +1834,11 @@ void SendPacketRaw(int a1, void *packetData, size_t packetDataSize, void *a4, EN
 			{
 				
 				memcpy(p3.data + 8, &((playerInfo(peer))->netID), 4); // ffloor
-				ENetPacket * packet3 = enet_packet_create(p3.data,
-					p3.len,
-					ENET_PACKET_FLAG_RELIABLE);
-
-				enet_peer_send(currentPeer, 0, packet3);
+				p3.send(currentPeer);
 			}
 
 		}
 		//enet_host_flush(server);
-		delete p3.data;
 	}
 
 	void sendPData(ENetPeer* peer, PlayerMoving* data)
@@ -2168,34 +2163,11 @@ void loadnews() {
 			if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 				continue;
 			if (isHere(peer, currentPeer)) {
-				{
-					
-					ENetPacket * packet = enet_packet_create(p.data,
-						p.len,
-						ENET_PACKET_FLAG_RELIABLE);
-					enet_peer_send(peer, 0, packet);
-					
-					{
-					ENetPacket * packet = enet_packet_create(p.data,
-							p.len,
-							ENET_PACKET_FLAG_RELIABLE);
-						enet_peer_send(currentPeer, 0, packet);	
-					}
-					
-				}
-				{
-					
-					ENetPacket * packet2 = enet_packet_create(p2.data,
-						p2.len,
-						ENET_PACKET_FLAG_RELIABLE);
-
-					enet_peer_send(currentPeer, 0, packet2);
-					
-				}
+				p.send(peer);
+				p.send(currentPeer);
+				p2.send(currentPeer);
 			}
 		}
-		delete p.data;
-		delete p2.data;
 	}
 
 	static inline void ltrim(string &s)
@@ -2311,25 +2283,10 @@ void loadnews() {
 				continue;
 			if (isHere(peer, currentPeer))
 			{
-				
-				ENetPacket * packet = enet_packet_create(p.data,
-					p.len,
-					ENET_PACKET_FLAG_RELIABLE);
-
-				enet_peer_send(currentPeer, 0, packet);
-				
-				//enet_host_flush(server);
-				
-				ENetPacket * packet2 = enet_packet_create(p2.data,
-					p2.len,
-					ENET_PACKET_FLAG_RELIABLE);
-				enet_peer_send(currentPeer, 0, packet2);
-				
-				//enet_host_flush(server);
+				p.send(currentPeer);
+				p2.send(currentPeer);
 			}
 		}
-		delete p.data;
-		delete p2.data;
 	}
 
 	void sendWho(ENetPeer* peer)
@@ -2447,7 +2404,7 @@ void loadnews() {
 		if (worldInfo->owner != "") {
 			packet::consolemessage(peer, "`#[`0" + worldInfo->name + " `9World Locked by " + worldInfo->owner + "`#]");
 		}
-		delete data;
+		delete[] data;
 
 	}
 
@@ -2466,18 +2423,10 @@ void loadnews() {
 			if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 				continue;
 			if (isHere(peer, currentPeer)) {
-				
 				memcpy(p2.data + 8, &netID, 4);
-				ENetPacket * packet2 = enet_packet_create(p2.data,
-					p2.len,
-					ENET_PACKET_FLAG_RELIABLE);
-
-				enet_peer_send(currentPeer, 0, packet2);
-				
-				//enet_host_flush(server);
+				p2.send(currentPeer);
 			}
 		}
-		delete p2.data;
 	}
 
 
@@ -2832,8 +2781,6 @@ label|Download Latest Version
 							.build();
 						memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
 						p2.send(peer);
-						delete p2.data;
-						//enet_host_flush(server);
 					}
 					{
 						int x = 3040;
@@ -3144,9 +3091,7 @@ label|Download Latest Version
 							.appendString(nam1e)
 							.build();
 						memcpy(p3.data + 8, &((playerInfo(peer))->netID), 4);
-						ENetPacket * packet3 = enet_packet_create(p3.data,
-							p3.len,
-							ENET_PACKET_FLAG_RELIABLE);
+					
 						ENetPeer * currentPeer;
 						for (currentPeer = server->peers;
 							currentPeer < &server->peers[server->peerCount];
@@ -3156,10 +3101,9 @@ label|Download Latest Version
 								continue;
 							if (isHere(peer, currentPeer))
 							{
-								enet_peer_send(currentPeer, 0, packet3);
+								p3.send(currentPeer);
 							}
 						}
-						delete p3.data;
 					}
 						else if (str.substr(0, 5) == "/gem ") //gem if u want flex with ur gems!
 						{
@@ -3184,9 +3128,6 @@ label|Download Latest Version
 							.build();
 						
 						memcpy(p2.data + 8, &((playerInfo(peer))->netID), 4);
-						ENetPacket * packet3 = enet_packet_create(p2.data,
-							p2.len,
-							ENET_PACKET_FLAG_RELIABLE);
 						ENetPeer * currentPeer;
 						for (currentPeer = server->peers;
 							currentPeer < &server->peers[server->peerCount];
@@ -3196,10 +3137,9 @@ label|Download Latest Version
 								continue;
 							if (isHere(peer, currentPeer))
 							{
-								enet_peer_send(currentPeer, 0, packet3);
+								p2.send(currentPeer);
 							}
 						}
-						delete p2.data;
 						}
 					else if (str.substr(0, 9) == "/weather ") {
 							if (world->name != "ADMIN") {
@@ -3255,9 +3195,6 @@ label|Download Latest Version
 							.appendString("audio/hub_open.wav")
 							.appendInt(0)
 							.build();
-						ENetPacket * packet = enet_packet_create(p.data,
-							p.len,
-							ENET_PACKET_FLAG_RELIABLE);
 						ENetPeer * currentPeer;
 						for (currentPeer = server->peers;
 							currentPeer < &server->peers[server->peerCount];
@@ -3265,10 +3202,8 @@ label|Download Latest Version
 						{
 							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 								continue;
-							enet_peer_send(currentPeer, 0, packet);
+							p.send(currentPeer);
 						}
-
-						delete p.data;
 					}
 					else if (str == "/invis") {
 						packet::consolemessage(peer, "`6" + str);
@@ -3337,13 +3272,7 @@ label|Download Latest Version
 								continue;
 							if (!(playerInfo(currentPeer))->radio)
 								continue;
-							ENetPacket * packet = enet_packet_create(p.data,
-								p.len,
-								ENET_PACKET_FLAG_RELIABLE);
-
-							enet_peer_send(currentPeer, 0, packet);
-							
-							
+							p.send(currentPeer);
 							
 							
 							ENetPacket * packet2 = enet_packet_create(data,
@@ -3354,8 +3283,7 @@ label|Download Latest Version
 							
 							//enet_host_flush(server);
 						}
-						delete data;
-						delete p.data;
+						delete[] data;
 					}
 					else if (str.substr(0, 5) == "/jsb ") {
 						using namespace std::chrono;
@@ -3390,15 +3318,8 @@ label|Download Latest Version
 								continue;
 							if (!(playerInfo(currentPeer))->radio)
 								continue;
-							ENetPacket * packet = enet_packet_create(p.data,
-								p.len,
-								ENET_PACKET_FLAG_RELIABLE);
-
-							enet_peer_send(currentPeer, 0, packet);
 							
-							
-							
-							
+							p.send(currentPeer);
 							ENetPacket * packet2 = enet_packet_create(data,
 								5+text.length(),
 								ENET_PACKET_FLAG_RELIABLE);
@@ -3407,14 +3328,13 @@ label|Download Latest Version
 							
 							//enet_host_flush(server);
 						}
-						delete data;
-						delete p.data;
+						delete[] data;
 					}
 					
 					
 					else if (str.substr(0, 6) == "/radio") {
-					GamePacketBuilder& builder = GamePacketBuilder()
-						.appendString("OnConsoleMessage");
+						GamePacketBuilder& builder = GamePacketBuilder()
+							.appendString("OnConsoleMessage");
 						
 						if ((playerInfo(peer))->radio) {
 							builder
@@ -3440,9 +3360,6 @@ label|Download Latest Version
 							.appendString("audio/mp3/suspended.mp3")
 							.appendInt(0)
 							.build();
-						ENetPacket * packet = enet_packet_create(p.data,
-							p.len,
-							ENET_PACKET_FLAG_RELIABLE);
 						ENetPeer * currentPeer;
 						for (currentPeer = server->peers;
 							currentPeer < &server->peers[server->peerCount];
@@ -3450,9 +3367,9 @@ label|Download Latest Version
 						{
 							if (currentPeer->state != ENET_PEER_STATE_CONNECTED)
 								continue;
-							enet_peer_send(currentPeer, 0, packet);
+
+							p.send(currentPeer);;
 						}
-						delete p.data;
 					}
 
 					else if (str == "/unmod")
