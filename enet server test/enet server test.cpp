@@ -26,78 +26,38 @@
 #include <cctype>
 #include <locale>
 #include <cstdio>
-#ifdef _WIN32
 #include <windows.h>
 #include <conio.h>
-#endif
-#ifdef __linux__
-#include <stdio.h>
-char _getch() {
-    return getchar();
-}
-#endif
 #include <vector>
 #include <sstream>
 #include <chrono>
 #include <fstream>
 #include "json.hpp"
-#ifdef _WIN32
 #include "bcrypt.h"
 #include "crypt_blowfish/crypt_gensalt.cpp"
 #include "crypt_blowfish/crypt_blowfish.h"
 #include "crypt_blowfish/crypt_blowfish.cpp"
 #include "crypt_blowfish/ow-crypt.cpp"
 #include "bcrypt.cpp"
-#else
-#include "bcrypt.h"
-#include "bcrypt.cpp"
-#include "crypt_blowfish/crypt_gensalt.h"
-#include "crypt_blowfish/crypt_gensalt.cpp"
-#include "crypt_blowfish/crypt_blowfish.h"
-#include "crypt_blowfish/crypt_blowfish.cpp"
-#include "crypt_blowfish/ow-crypt.h"
-#include "crypt_blowfish/ow-crypt.cpp"
-#include "bcrypt.h"
-#endif
-#include <thread> // TODO
-#include <mutex> // TODO
 
 #pragma warning(disable : 4996)
 
-using namespace std;
+using std::string;
+using std::cout;
+using std::endl;
+using std::vector;
+
 using json = nlohmann::json;
 string newslist = "set_default_color|`o\n\nadd_label_with_icon|big|`wThe Growtopia Gazette``|left|5016|\n\nadd_spacer|small|\nadd_label_with_icon|small|`4WARNING:`` `5Worlds (and accounts)`` might be deleted at any time if database issues appear (once per day or week).|left|4|\nadd_label_with_icon|small|`4WARNING:`` `5Accounts`` are in beta, bugs may appear and they will be probably deleted often, because of new account updates, which will cause database incompatibility.|left|4|\nadd_spacer|small|\n\nadd_url_button||``Watch: `1Watch a video about GT Private Server``|NOFLAGS|https://www.youtube.com/watch?v=_3avlDDYBBY|Open link?|0|0|\nadd_url_button||``Channel: `1Watch Growtopia Noobs' channel``|NOFLAGS|https://www.youtube.com/channel/UCLXtuoBlrXFDRtFU8vPy35g|Open link?|0|0|\nadd_url_button||``Items: `1Item database by Nenkai``|NOFLAGS|https://raw.githubusercontent.com/Nenkai/GrowtopiaItemDatabase/master/GrowtopiaItemDatabase/CoreData.txt|Open link?|0|0|\nadd_url_button||``Discord: `1GT Private Server Discord``|NOFLAGS|https://discord.gg/8WUTs4v|Open the link?|0|0|\nadd_quick_exit|\n\nend_dialog|gazette|Close||";
 
 //#define TOTAL_LOG
 #define REGISTRATION
 #include <signal.h>
-#ifdef __linux__
-#include <cstdint>
-typedef unsigned char BYTE;
-typedef unsigned char __int8;
-typedef unsigned short __int16;
-typedef unsigned int DWORD;
-#endif
 ENetHost * server;
 int cId = 1;
 BYTE* itemsDat = 0;
 int itemsDatSize = 0;
-//Linux equivalent of GetLastError
-#ifdef __linux__
-string GetLastError() {
-	return strerror(errno);
-}
-//Linux has no byteswap functions.
-ulong _byteswap_ulong(ulong x)
-{
-	// swap adjacent 32-bit blocks
-	//x = (x >> 32) | (x << 32);
-	// swap adjacent 16-bit blocks
-	x = ((x & 0xFFFF0000FFFF0000) >> 16) | ((x & 0x0000FFFF0000FFFF) << 16);
-	// swap adjacent 8-bit blocks
-	return ((x & 0xFF00FF00FF00FF00) >> 8) | ((x & 0x00FF00FF00FF00FF) << 8);
-}
-#endif
+
 
 //configs
 int configPort = 17091;
@@ -2707,7 +2667,6 @@ label|Download Latest Version
 
 	ENetEvent event;
 	/* Wait up to 1000 milliseconds for an event. */
-	while (true)
 	while (enet_host_service(server, &event, 1000) > 0)
 	{
 		ENetPeer* peer = event.peer;
@@ -4122,6 +4081,5 @@ label|Download Latest Version
 		}
 	}
 	cout << "Program ended??? Huh?" << endl;
-	while (1);
 	return 0;
 }
