@@ -317,7 +317,7 @@ public:
 		enet_peer_send(peer, 0, packet);
 	}
 
-	GamePacket(GamePacket&& packet) {
+	GamePacket(GamePacket&& packet) noexcept {
 		this->data = packet.data;
 		this->len = packet.len;
 		this->indexes = packet.indexes;
@@ -327,7 +327,7 @@ public:
 		packet.indexes = 0;
 	};
 
-	GamePacket& operator=(GamePacket&& packet) {
+	GamePacket& operator=(GamePacket&& packet) noexcept {
 		this->data = packet.data;
 		this->len = packet.len;
 		this->indexes = packet.indexes;
