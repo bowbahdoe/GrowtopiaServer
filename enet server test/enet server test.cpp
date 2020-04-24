@@ -32,6 +32,7 @@
 #include <sstream>
 #include <chrono>
 #include <fstream>
+#include <regex>
 #include "json.hpp"
 #include "bcrypt.h"
 #include "crypt_blowfish/crypt_gensalt.cpp"
@@ -126,33 +127,13 @@ char* getPacketData(char* data)
 
 string text_encode(char* text)
 {
-	string ret = "";
-	while (text[0] != 0)
-	{
-		switch (text[0])
-		{
-		case '\n':
-			ret += "\\n";
-			break;
-		case '\t':
-			ret += "\\t";
-			break;
-		case '\b':
-			ret += "\\b";
-			break;
-		case '\\':
-			ret += "\\\\";
-			break;
-		case '\r':
-			ret += "\\r";
-			break;
-		default:
-			ret += text[0];
-			break;
-		}
-		text++;
-	}
-	return ret;
+	string escaped = text;
+	escaped = std::regex_replace(escaped, std::regex("\n"), "\\n");
+	escaped = std::regex_replace(escaped, std::regex("\t"), "\\t");
+	escaped = std::regex_replace(escaped, std::regex("\b"), "\\b");
+	escaped = std::regex_replace(escaped, std::regex("\\"), "\\\\");
+	escaped = std::regex_replace(escaped, std::regex("\r"), "\\r");
+	return escaped;
 }
 
 int ch2n(char x)
