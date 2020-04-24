@@ -280,29 +280,12 @@ vector<string> explode(const string &delimiter, const string &str)
 
 struct GamePacket
 {
-	BYTE* data;
-	int len;
-	int indexes;
-
-public:
-	/**
-	 * Sends the packet to the given peer. Takes ownership of self.
-	 */
-	void send(ENetPeer* peer) {
-		ENetPacket* packet = enet_packet_create(this->data,
-			this->len,
-			ENET_PACKET_FLAG_RELIABLE);
-		enet_peer_send(peer, 0, packet);
-		delete this->data;
-	}
-};
-
-class GamePacketBuilder {
 private:
-	GamePacket p;
+	// We want to be sure this isn't accidentally copied.
+	GamePacket(GamePacket const&) = delete;
+	GamePacket& operator=(GamePacket const&) = delete;
 
-public:
-	GamePacketBuilder() {
+	GamePacket() {
 		BYTE* packetData = new BYTE[61];
 		string asdf = "0400000001000000FFFFFFFF00000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 		for (int i = 0; i < asdf.length(); i += 2)
@@ -313,12 +296,58 @@ public:
 			memcpy(packetData + (i / 2), &x, 1);
 			if (asdf.length() > 61 * 2) throw 0;
 		}
-		this->p.data = packetData;
-		this->p.len = 61;
-		this->p.indexes = 0;
+		this->data = packetData;
+		this->len = 61;
+		this->indexes = 0;
+	}
+	
+	friend class GamePacketBuilder;
+
+public:
+	BYTE* data;
+	int len;
+	int indexes;
+	/**
+	 * Sends the packet to the given peer. Takes ownership of self.
+	 */
+	void send(ENetPeer* peer) {
+		ENetPacket* packet = enet_packet_create(this->data,
+			this->len,
+			ENET_PACKET_FLAG_RELIABLE);
+		enet_peer_send(peer, 0, packet);
 	}
 
-	GamePacketBuilder appendFloat(float val) {
+	GamePacket(GamePacket&& packet) {
+		this->data = packet.data;
+		this->len = packet.len;
+		this->indexes = packet.indexes;
+
+		packet.data = NULL;
+		packet.len = 0;
+		packet.indexes = 0;
+	};
+
+	GamePacket& operator=(GamePacket&& packet) {
+		this->data = packet.data;
+		this->len = packet.len;
+		this->indexes = packet.indexes;
+
+		packet.data = NULL;
+		packet.len = 0;
+		packet.indexes = 0;
+	};
+
+	~GamePacket() {
+		delete this->data;
+	}
+};
+
+class GamePacketBuilder {
+private:
+	GamePacket p;
+
+public:
+	GamePacketBuilder& appendFloat(float val) {
 		BYTE* n = new BYTE[p.len + 2 + 4];
 		memcpy(n, p.data, p.len);
 		delete p.data;
@@ -331,7 +360,7 @@ public:
 		return *this;
 	}
 
-	GamePacketBuilder appendFloat(float val, float val2)
+	GamePacketBuilder& appendFloat(float val, float val2)
 	{
 		BYTE* n = new BYTE[p.len + 2 + 8];
 		memcpy(n, p.data, p.len);
@@ -346,7 +375,7 @@ public:
 		return *this;
 	}
 
-	GamePacketBuilder appendFloat(float val, float val2, float val3)
+	GamePacketBuilder& appendFloat(float val, float val2, float val3)
 	{
 		BYTE* n = new BYTE[p.len + 2 + 12];
 		memcpy(n, p.data, p.len);
@@ -362,7 +391,7 @@ public:
 		return *this;
 	}
 
-	GamePacketBuilder appendInt(int val)
+	GamePacketBuilder& appendInt(int val)
 	{
 		BYTE* n = new BYTE[p.len + 2 + 4];
 		memcpy(n, p.data, p.len);
@@ -376,7 +405,7 @@ public:
 		return *this;
 	}
 
-	GamePacketBuilder appendIntx(int val)
+	GamePacketBuilder& appendIntx(int val)
 	{
 		BYTE* n = new BYTE[p.len + 2 + 4];
 		memcpy(n, p.data, p.len);
@@ -390,7 +419,7 @@ public:
 		return *this;
 	}
 
-	GamePacketBuilder appendString(string str)
+	GamePacketBuilder& appendString(string str)
 	{
 		BYTE* n = new BYTE[p.len + 2 + str.length() + 4];
 		memcpy(n, p.data, p.len);
@@ -406,7 +435,7 @@ public:
 		return *this;
 	}
 
-	GamePacket build() {
+	GamePacket&& build() {
 		BYTE* n = new BYTE[p.len + 1];
 		memcpy(n, p.data, p.len);
 		delete p.data;
@@ -416,7 +445,7 @@ public:
 		p.len += 1;
 		*(int*)(p.data + 56) = p.indexes;
 		*(BYTE*)(p.data + 60) = p.indexes;
-		return this->p;
+		return std::move(this->p);
 	}
 };
 
@@ -3384,21 +3413,21 @@ label|Download Latest Version
 					
 					
 					else if (str.substr(0, 6) == "/radio") {
-						GamePacket p;
+					GamePacketBuilder& builder = GamePacketBuilder()
+						.appendString("OnConsoleMessage");
+						
 						if ((playerInfo(peer))->radio) {
-							p = GamePacketBuilder()
-								.appendString("OnConsoleMessage")
+							builder
 								.appendString("You won't see broadcasts anymore.")
 								.build();
 							(playerInfo(peer))->radio = false;
 						} else {
-							p = GamePacketBuilder()
-								.appendString("OnConsoleMessage")
+							builder
 								.appendString("You will now see broadcasts again.")
 								.build();
 							(playerInfo(peer))->radio = true;
 						}
-
+						GamePacket p = builder.build();
 						p.send(peer);
 					}
 					else if (str.substr(0, 6) == "/reset"){
