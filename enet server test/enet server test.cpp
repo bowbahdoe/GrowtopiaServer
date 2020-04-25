@@ -51,7 +51,6 @@ using std::vector;
 using json = nlohmann::json;
 string newslist = "set_default_color|`o\n\nadd_label_with_icon|big|`wThe Growtopia Gazette``|left|5016|\n\nadd_spacer|small|\nadd_label_with_icon|small|`4WARNING:`` `5Worlds (and accounts)`` might be deleted at any time if database issues appear (once per day or week).|left|4|\nadd_label_with_icon|small|`4WARNING:`` `5Accounts`` are in beta, bugs may appear and they will be probably deleted often, because of new account updates, which will cause database incompatibility.|left|4|\nadd_spacer|small|\n\nadd_url_button||``Watch: `1Watch a video about GT Private Server``|NOFLAGS|https://www.youtube.com/watch?v=_3avlDDYBBY|Open link?|0|0|\nadd_url_button||``Channel: `1Watch Growtopia Noobs' channel``|NOFLAGS|https://www.youtube.com/channel/UCLXtuoBlrXFDRtFU8vPy35g|Open link?|0|0|\nadd_url_button||``Items: `1Item database by Nenkai``|NOFLAGS|https://raw.githubusercontent.com/Nenkai/GrowtopiaItemDatabase/master/GrowtopiaItemDatabase/CoreData.txt|Open link?|0|0|\nadd_url_button||``Discord: `1GT Private Server Discord``|NOFLAGS|https://discord.gg/8WUTs4v|Open the link?|0|0|\nadd_quick_exit|\n\nend_dialog|gazette|Close||";
 
-//#define TOTAL_LOG
 #define REGISTRATION
 #include <signal.h>
 ENetHost * server;
@@ -1143,13 +1142,7 @@ ItemDefinition getItemDef(int id)
 {
 	if (id < itemDefs.size() && id > -1)
 		return itemDefs.at(id);
-	/*for (int i = 0; i < itemDefs.size(); i++)
-	{
-		if (id == itemDefs.at(i).id)
-		{
-			return itemDefs.at(i);
-		}
-	}*/
+
 	throw 0;
 	return itemDefs.at(0);
 }
@@ -2010,9 +2003,7 @@ void loadnews() {
 		catch (int e) {
 			def.breakHits = 4;
 			def.blockType = BlockTypes::UNKNOWN;
-#ifdef TOTAL_LOG
 			cout << "Ugh, unsupported item " << tile << endl;
-#endif
 		}
  
 		if (tile == 18) {
@@ -2295,9 +2286,7 @@ void loadnews() {
 
 	void sendWorld(ENetPeer* peer, WorldInfo* worldInfo)
 	{
-#ifdef TOTAL_LOG
 		cout << "Entering a world..." << endl;
-#endif
 		(playerInfo(peer))->joinClothesUpdated = false;
 		
 		 string worldName = worldInfo->name; 
@@ -2597,10 +2586,7 @@ label|Download Latest Version
 		{
 		case ENET_EVENT_TYPE_CONNECT:
 		{
-#ifdef TOTAL_LOG
 			printf("A new client connected.\n");
-#endif
-
 			/* Store any relevant client information here. */
 			ENetPeer * currentPeer;
 			int count = 0;
@@ -2778,9 +2764,7 @@ label|Download Latest Version
 						p2.send(peer);
 						//enet_host_flush(server);
 					}
-#ifdef TOTAL_LOG
 					cout << "Respawning... " << endl;
-#endif
 				}
 				if (cch.find("action|growid") == 0)
 				{
@@ -3514,9 +3498,7 @@ label|Download Latest Version
 				string pStr = GetTextPointerFromPacket(event.packet);
 				if(pStr.substr(0, 17) == "action|enter_game" && !(playerInfo(event.peer))->isIn)
 				{
-#ifdef TOTAL_LOG
 					cout << "And we are in!" << endl;
-#endif
 					ENetPeer* currentPeer;
 					(playerInfo(event.peer))->isIn = true;
 					sendWorldOffers(peer);
@@ -3572,9 +3554,7 @@ label|Download Latest Version
 					string act = to.substr(to.find("|") + 1, to.length() - to.find("|") - 1);
 					if (id == "name" && isJoinReq)
 					{
-#ifdef TOTAL_LOG
 						cout << "Entering some world..." << endl;
-#endif
 						if (!(playerInfo(peer))->hasLogon) break;
 						try {
 							if (act.length() > 30) {
@@ -3819,9 +3799,7 @@ label|Download Latest Version
 								(playerInfo(event.peer))->cloth8 = pMov->plantingTree;
 								break;
 							default:
-#ifdef TOTAL_LOG
 								cout << "Invalid item activated: " << pMov->plantingTree << " by " << (playerInfo(event.peer))->displayName << endl;
-#endif
 								break;
 							}
 							sendClothes(peer);
@@ -3863,9 +3841,7 @@ label|Download Latest Version
 			break;
 		}
 		case ENET_EVENT_TYPE_DISCONNECT:
-#ifdef TOTAL_LOG
 			printf("Peer disconnected.\n");
-#endif
 			/* Reset the peer's client information. */
 			sendPlayerLeave(peer, playerInfo(event.peer));
 			(playerInfo(event.peer))->inventory.items.clear();
